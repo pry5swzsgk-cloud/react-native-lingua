@@ -58,12 +58,16 @@ export interface Lesson {
   vocabulary: VocabularyItem[];
   phrases: Phrase[];
   activities: Activity[];
-  aiTeacherPrompt: AITeacherPrompt;
+  aiTeacherPrompt?: AITeacherPrompt;
 }
+
+// CEFR level of a unit: A1 = beginner, A2 = elementary, B1 = intermediate
+export type UnitLevel = "A1" | "A2" | "B1";
 
 export interface Unit {
   id: string;
   languageCode: LanguageCode;
+  level: UnitLevel;
   title: string;
   description: string;
   order: number;

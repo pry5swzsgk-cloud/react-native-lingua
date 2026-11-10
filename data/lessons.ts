@@ -1,3 +1,5 @@
+import { ELEMENTARY_LESSONS } from '@/data/lessons-elementary';
+import { INTERMEDIATE_LESSONS } from '@/data/lessons-intermediate';
 import { Lesson } from '@/types/learning';
 
 export const LESSONS: Lesson[] = [
@@ -1011,4 +1013,8 @@ export const LESSONS: Lesson[] = [
       topics: ['food', 'drinks', 'ordering', 'café phrases', 'polite German'],
     },
   },
+
+  // ─── Harder levels (A2 and B1) ─────────────────────────────────────────────
+  ...ELEMENTARY_LESSONS,
+  ...INTERMEDIATE_LESSONS,
 ];
