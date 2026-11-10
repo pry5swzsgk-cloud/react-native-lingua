@@ -1,4 +1,3 @@
-import { useAuth, useUser } from "@clerk/expo";
 import { Ionicons } from "@expo/vector-icons";
 import {
   Image,
@@ -65,14 +64,11 @@ const PLAN_ITEMS = [
 ];
 
 export default function HomeScreen() {
-  const { user } = useUser();
-  const { signOut } = useAuth();
   const { selectedLanguage } = useLanguageStore();
   const { xpToday, dailyGoal, streak } = useLearningStore();
 
   const language = LANGUAGES.find((l) => l.code === selectedLanguage);
   const unit = UNITS.find((u) => u.languageCode === selectedLanguage);
-  const firstName = user?.firstName ?? "Learner";
   const greeting = getGreeting(selectedLanguage);
   const xpProgress =
     dailyGoal > 0 ? Math.min((xpToday / dailyGoal) * 100, 100) : 0;
@@ -97,7 +93,7 @@ export default function HomeScreen() {
               <View className="w-[34px] h-[34px] rounded-full bg-surface" />
             )}
             <Text className="font-poppins-semibold text-base text-text-primary">
-              {greeting}, {firstName}! 👋
+              {greeting}! 👋
             </Text>
           </View>
 
@@ -111,13 +107,6 @@ export default function HomeScreen() {
             <TouchableOpacity activeOpacity={0.7}>
               <Ionicons
                 name="notifications-outline"
-                size={24}
-                color={colors.neutral.textPrimary}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity activeOpacity={0.7} onPress={() => signOut()}>
-              <Ionicons
-                name="log-out-outline"
                 size={24}
                 color={colors.neutral.textPrimary}
               />

@@ -41,8 +41,6 @@ export default {
           },
         },
       ],
-      "@clerk/expo",
-      "expo-secure-store",
     ],
     experiments: {
       typedRoutes: true,

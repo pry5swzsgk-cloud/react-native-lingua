@@ -71,7 +71,7 @@ export default function OnboardingScreen() {
           testID="get-started-button"
           onPress={() => {
             posthog.capture("onboarding_get_started_tapped");
-            router.push("/(auth)/sign-up");
+            router.push("/language-select");
           }}
         >
           <Text className="font-poppins-semibold text-base text-white">
