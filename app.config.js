@@ -43,24 +43,6 @@ export default {
       ],
       "@clerk/expo",
       "expo-secure-store",
-      "@stream-io/video-react-native-sdk",
-      [
-        "@config-plugins/react-native-webrtc",
-        {
-          cameraPermission:
-            "Allow $(PRODUCT_NAME) to access your camera for video lessons.",
-          microphonePermission:
-            "Allow $(PRODUCT_NAME) to access your microphone for audio lessons.",
-        },
-      ],
-      [
-        "expo-build-properties",
-        {
-          android: {
-            minSdkVersion: 24,
-          },
-        },
-      ],
     ],
     experiments: {
       typedRoutes: true,
@@ -69,7 +51,6 @@ export default {
     extra: {
       posthogProjectToken: process.env.POSTHOG_PROJECT_TOKEN,
       posthogHost: process.env.POSTHOG_HOST,
-      streamApiKey: process.env.STREAM_API_KEY,
     },
   },
 };
