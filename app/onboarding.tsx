@@ -10,7 +10,7 @@ export default function OnboardingScreen() {
       <View className="flex-1 px-6">
         {/* Logo header */}
         <View className="flex-row items-center justify-center gap-2 mt-4">
-          <Image source={images.mascotLogo} className="w-10 h-10" />
+          <Image source={images.mascotLogo} style={styles.logo} />
           <Text className="font-poppins-semibold text-xl text-text-primary">
             lingo
           </Text>
@@ -31,7 +31,7 @@ export default function OnboardingScreen() {
         <View className="flex-1 mt-4">
           <Image
             source={images.mascotWelcome}
-            className="flex-1 w-full"
+            style={styles.hero}
             resizeMode="contain"
           />
 
@@ -87,7 +87,10 @@ export default function OnboardingScreen() {
   );
 }
 
+// RN Image needs explicit sizes (className is ignored on web)
 const styles = StyleSheet.create({
+  logo: { width: 40, height: 40 },
+  hero: { flex: 1, width: "100%" },
   shadow: {
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },

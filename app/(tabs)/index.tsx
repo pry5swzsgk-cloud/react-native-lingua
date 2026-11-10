@@ -98,7 +98,7 @@ export default function HomeScreen() {
 
           <View className="flex-row items-center gap-[14px]">
             <View className="flex-row items-center gap-1">
-              <Image source={images.streakFire} className="w-[22px] h-[22px]" />
+              <Image source={images.streakFire} style={styles.streakIcon} />
               <Text className="font-poppins-semibold text-[15px] text-streak">
                 {streak}
               </Text>
@@ -136,7 +136,7 @@ export default function HomeScreen() {
           </View>
           <Image
             source={images.treasure}
-            className="w-20 h-20"
+            style={styles.treasure}
             resizeMode="contain"
           />
         </View>
@@ -168,7 +168,7 @@ export default function HomeScreen() {
           </View>
           <Image
             source={images.palace}
-            className="w-[130px] h-[160px]"
+            style={styles.palace}
             resizeMode="cover"
           />
         </View>
@@ -226,6 +226,9 @@ export default function HomeScreen() {
 
 // ScrollView.contentContainerStyle and shadow (iOS/Android) must stay in StyleSheet
 const styles = StyleSheet.create({
+  streakIcon: { width: 22, height: 22 },
+  treasure: { width: 80, height: 80 },
+  palace: { width: 130, height: 160 },
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 12,
