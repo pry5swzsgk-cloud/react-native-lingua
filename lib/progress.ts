@@ -37,3 +37,20 @@ export function getNextLesson(
 export function getUnitOfLesson(lesson: Lesson): Unit | undefined {
   return UNITS.find((u) => u.id === lesson.unitId);
 }
+
+// The next open lesson after the given one, in course order. Used on the
+// "lesson complete" screen so the learner moves on to harder material.
+export function getLessonAfter(
+  lesson: Lesson,
+  completedLessonIds: string[],
+): Lesson | null {
+  const unit = getUnitOfLesson(lesson);
+  if (!unit) return null;
+
+  const all = getUnits(unit.languageCode).flatMap(getUnitLessons);
+  const index = all.findIndex((l) => l.id === lesson.id);
+  const isOpen = (l: Lesson) =>
+    l.id !== lesson.id && !completedLessonIds.includes(l.id);
+
+  return all.slice(index + 1).find(isOpen) ?? all.find(isOpen) ?? null;
+}
