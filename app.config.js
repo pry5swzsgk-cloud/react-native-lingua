@@ -45,6 +45,8 @@ export default {
     experiments: {
       typedRoutes: true,
       reactCompiler: true,
+      // Only set for the GitHub Pages build (site lives under /react-native-lingua)
+      ...(process.env.EXPO_BASE_URL ? { baseUrl: process.env.EXPO_BASE_URL } : {}),
     },
   },
 };
