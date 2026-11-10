@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { SpeakButton } from "@/components/SpeakButton";
 import { images } from "@/constants/images";
 import { colors } from "@/constants/theme";
 import { LESSONS } from "@/data/lessons";
@@ -43,6 +44,7 @@ export default function LessonScreen() {
   }
 
   const isCompleted = completedLessonIds.includes(lesson.id);
+  const languageCode = getUnitOfLesson(lesson)?.languageCode ?? null;
 
   function handleComplete() {
     if (!lesson) return;
@@ -181,9 +183,10 @@ export default function LessonScreen() {
                   </Text>
                   <Text className="caption">{item.pronunciation}</Text>
                 </View>
-                <Text className="body-sm text-text-secondary">
+                <Text className="body-sm text-text-secondary mr-2">
                   {item.translation}
                 </Text>
+                <SpeakButton text={item.word} languageCode={languageCode} />
               </View>
             </View>
           ))}
@@ -195,15 +198,18 @@ export default function LessonScreen() {
           {lesson.phrases.map((phrase) => (
             <View
               key={phrase.text}
-              className="bg-surface rounded-2xl px-4 py-3"
+              className="flex-row items-center bg-surface rounded-2xl px-4 py-3"
             >
-              <Text className="font-poppins-semibold text-sm text-text-primary">
-                {phrase.text}
-              </Text>
-              <Text className="caption">{phrase.pronunciation}</Text>
-              <Text className="body-sm text-text-secondary mt-1">
-                {phrase.translation}
-              </Text>
+              <View className="flex-1 mr-2">
+                <Text className="font-poppins-semibold text-sm text-text-primary">
+                  {phrase.text}
+                </Text>
+                <Text className="caption">{phrase.pronunciation}</Text>
+                <Text className="body-sm text-text-secondary mt-1">
+                  {phrase.translation}
+                </Text>
+              </View>
+              <SpeakButton text={phrase.text} languageCode={languageCode} />
             </View>
           ))}
         </View>

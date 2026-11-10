@@ -5,6 +5,7 @@ export interface Language {
   name: string;
   nativeName: string;
   flag: string; // emoji, works offline
+  speechLocale: string; // voice used for text-to-speech, e.g. "es-ES"
   color: string;
 }
 
