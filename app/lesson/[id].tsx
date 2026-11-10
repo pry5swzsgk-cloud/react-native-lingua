@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Image,
   ScrollView,
@@ -11,11 +11,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { PhraseCard } from "@/components/PhraseCard";
 import { SpeakButton } from "@/components/SpeakButton";
 import { images } from "@/constants/images";
 import { colors } from "@/constants/theme";
 import { LESSONS } from "@/data/lessons";
 import { getLessonAfter, getUnitOfLesson } from "@/lib/progress";
+import { isSpeechRecognitionSupported } from "@/lib/speechRecognition";
 import { useLearningStore } from "@/store/learningStore";
 
 // Offline lesson screen: everything comes from data/lessons.ts,
@@ -26,6 +28,12 @@ export default function LessonScreen() {
   const { completedLessonIds, completeLesson, addXP } = useLearningStore();
 
   const lesson = LESSONS.find((l) => l.id === id);
+  // null until checked; speech recognition is missing in some browsers
+  const [canPractice, setCanPractice] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    setCanPractice(isSpeechRecognitionSupported());
+  }, []);
   // Which lesson was just finished and how much XP it gave (0 on a repeat)
   const [finished, setFinished] = useState<{ id: string; xp: number } | null>(
     null,
@@ -193,24 +201,20 @@ export default function LessonScreen() {
         </View>
 
         {/* Phrases */}
-        <Text className="h4 mb-3">Useful phrases</Text>
+        <Text className="h4 mb-1">Useful phrases</Text>
+        <Text className="body-sm text-text-secondary mb-3" testID="practice-hint">
+          {canPractice === false
+            ? "Tap the speaker to listen. Speaking practice isn't supported on this device or browser."
+            : "Tap the speaker to listen, then the mic to practice saying it."}
+        </Text>
         <View className="gap-3">
           {lesson.phrases.map((phrase) => (
-            <View
+            <PhraseCard
               key={phrase.text}
-              className="flex-row items-center bg-surface rounded-2xl px-4 py-3"
-            >
-              <View className="flex-1 mr-2">
-                <Text className="font-poppins-semibold text-sm text-text-primary">
-                  {phrase.text}
-                </Text>
-                <Text className="caption">{phrase.pronunciation}</Text>
-                <Text className="body-sm text-text-secondary mt-1">
-                  {phrase.translation}
-                </Text>
-              </View>
-              <SpeakButton text={phrase.text} languageCode={languageCode} />
-            </View>
+              phrase={phrase}
+              languageCode={languageCode}
+              canPractice={canPractice === true}
+            />
           ))}
         </View>
       </ScrollView>
