@@ -4,9 +4,8 @@ export interface Language {
   code: LanguageCode;
   name: string;
   nativeName: string;
-  flag: string;
+  flag: string; // emoji, works offline
   color: string;
-  learners: string;
 }
 
 export type ActivityType =

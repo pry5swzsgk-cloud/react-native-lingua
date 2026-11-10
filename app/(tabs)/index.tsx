@@ -41,7 +41,7 @@ const PLAN_ITEMS = [
     iconColor: colors.primary.purple,
     title: "Lesson",
     subtitle: "At the café",
-    completed: true,
+    completed: false,
   },
   {
     id: "ai-conversation",
@@ -85,10 +85,9 @@ export default function HomeScreen() {
         <View className="flex-row items-center justify-between mb-5">
           <View className="flex-row items-center gap-[10px]">
             {language ? (
-              <Image
-                source={{ uri: language.flag }}
-                className="w-[34px] h-[34px] rounded-full"
-              />
+              <View className="w-[34px] h-[34px] rounded-full bg-surface items-center justify-center">
+                <Text className="text-xl">{language.flag}</Text>
+              </View>
             ) : (
               <View className="w-[34px] h-[34px] rounded-full bg-surface" />
             )}
