@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import {
   Image,
   ScrollView,
@@ -13,7 +14,6 @@ import { images } from "@/constants/images";
 import { colors } from "@/constants/theme";
 import { LANGUAGES } from "@/data/languages";
 import { UNITS } from "@/data/units";
-import { posthog } from "@/lib/posthog";
 import { useLanguageStore } from "@/store/languageStore";
 import { useLearningStore } from "@/store/learningStore";
 import { LanguageCode } from "@/types/learning";
@@ -160,14 +160,7 @@ export default function HomeScreen() {
               className="bg-white rounded-xl py-2 px-[22px] self-start"
               activeOpacity={0.85}
               testID="continue-learning-button"
-              onPress={() => {
-                posthog.capture("continue_learning_tapped", {
-                  language_code: selectedLanguage,
-                  unit_order: unit?.order ?? 1,
-                  xp_today: xpToday,
-                  streak,
-                });
-              }}
+              onPress={() => router.navigate("/learn")}
             >
               <Text className="font-poppins-semibold text-[13px] text-lingua-purple">
                 Continue

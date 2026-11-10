@@ -46,9 +46,5 @@ export default {
       typedRoutes: true,
       reactCompiler: true,
     },
-    extra: {
-      posthogProjectToken: process.env.POSTHOG_PROJECT_TOKEN,
-      posthogHost: process.env.POSTHOG_HOST,
-    },
   },
 };

@@ -1,6 +1,5 @@
 import { images } from "@/constants/images";
 import { LANGUAGES } from "@/data/languages";
-import { posthog } from "@/lib/posthog";
 import { useLanguageStore } from "@/store/languageStore";
 import { Language, LanguageCode } from "@/types/learning";
 import { Ionicons } from "@expo/vector-icons";
@@ -107,11 +106,6 @@ export default function LanguageSelectScreen() {
           activeOpacity={0.85}
           testID="language-confirm-button"
           onPress={() => {
-            const selectedLang = LANGUAGES.find((l) => l.code === selectedCode);
-            posthog.capture("language_selected", {
-              language_code: selectedCode,
-              language_name: selectedLang?.name ?? selectedCode,
-            });
             setSelectedLanguage(selectedCode as LanguageCode);
             router.replace("/");
           }}
