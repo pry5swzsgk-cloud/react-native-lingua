@@ -29,6 +29,8 @@ export function isSpeechRecognitionSupported(): boolean {
 
 function errorMessage(code: string): string {
   switch (code) {
+    case "aborted":
+      return ""; // the learner stopped listening, nothing went wrong
     case "not-allowed":
     case "service-not-allowed":
       return "Microphone access is off. Allow it in your settings to practice speaking.";
@@ -50,56 +52,87 @@ interface ListenHandlers {
   onEnd: () => void;
 }
 
+// If the recognizer has not reported "end" this long after stop(), cancel it.
+// Some browsers (Safari) never end after stop() when nothing was said yet.
+const STOP_GRACE_MS = 1500;
+// Never listen forever, even if the learner forgets to tap again.
+const MAX_LISTEN_MS = 15000;
+
 // Listens for one sentence in the given locale (e.g. "fr-FR").
-// Returns a function that stops listening early.
-export async function listenOnce(
+// Returns right away; stop() works at any moment, even while the
+// microphone permission is still being requested.
+export function listenOnce(
   locale: string,
   { onResult, onError, onEnd }: ListenHandlers,
-): Promise<() => void> {
+): { stop: () => void } {
   const recognition = loadModule();
-  if (!recognition) {
-    onError(errorMessage("unavailable"));
+  let stopRequested = false;
+  let ended = false;
+  let started = false;
+  const subscriptions: { remove: () => void }[] = [];
+  const timers: ReturnType<typeof setTimeout>[] = [];
+
+  // Runs exactly once, no matter how listening ends
+  function finish() {
+    if (ended) return;
+    ended = true;
+    timers.forEach(clearTimeout);
+    subscriptions.forEach((subscription) => subscription.remove());
     onEnd();
-    return () => {};
   }
 
-  // Browsers ask for the microphone themselves when recognition starts
-  if (Platform.OS !== "web") {
-    const permission = await recognition.requestPermissionsAsync();
-    if (!permission.granted) {
-      onError(errorMessage("not-allowed"));
-      onEnd();
-      return () => {};
+  function fail(code: string) {
+    const message = errorMessage(code);
+    if (message) onError(message);
+    finish();
+  }
+
+  function stop() {
+    if (ended || stopRequested) return;
+    stopRequested = true;
+    if (!recognition || !started) {
+      finish(); // nothing is running yet, just cancel the start
+      return;
+    }
+    recognition.stop(); // finishes the sentence and reports what it heard
+    timers.push(setTimeout(() => recognition.abort(), STOP_GRACE_MS));
+    // abort() should end things; make sure the screen recovers regardless
+    timers.push(setTimeout(finish, STOP_GRACE_MS + 1000));
+  }
+
+  async function begin() {
+    if (!recognition) return fail("unavailable");
+
+    // Browsers ask for the microphone themselves when recognition starts
+    if (Platform.OS !== "web") {
+      const permission = await recognition.requestPermissionsAsync();
+      if (!permission.granted) return fail("not-allowed");
+    }
+    if (stopRequested) return; // the learner cancelled while we were waiting
+
+    subscriptions.push(
+      recognition.addListener("result", (event) => {
+        const best = event.results[0];
+        if (event.isFinal && best) onResult(best.transcript);
+      }),
+      recognition.addListener("error", (event) => fail(event.error)),
+      recognition.addListener("end", finish),
+    );
+
+    try {
+      recognition.start({
+        lang: locale,
+        interimResults: false,
+        maxAlternatives: 1,
+        continuous: false,
+      });
+      started = true;
+      timers.push(setTimeout(stop, MAX_LISTEN_MS));
+    } catch {
+      fail("unavailable");
     }
   }
 
-  const subscriptions = [
-    recognition.addListener("result", (event) => {
-      const best = event.results[0];
-      if (event.isFinal && best) onResult(best.transcript);
-    }),
-    recognition.addListener("error", (event) => {
-      onError(errorMessage(event.error));
-    }),
-    recognition.addListener("end", () => {
-      subscriptions.forEach((subscription) => subscription.remove());
-      onEnd();
-    }),
-  ];
-
-  try {
-    recognition.start({
-      lang: locale,
-      interimResults: false,
-      maxAlternatives: 1,
-      continuous: false,
-    });
-  } catch {
-    subscriptions.forEach((subscription) => subscription.remove());
-    onError(errorMessage("unavailable"));
-    onEnd();
-    return () => {};
-  }
-
-  return () => recognition.stop();
+  begin().catch(() => fail("unavailable"));
+  return { stop };
 }

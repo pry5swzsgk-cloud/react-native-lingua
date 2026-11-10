@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 
 import { SpeakButton } from "@/components/SpeakButton";
 import { colors } from "@/constants/theme";
@@ -20,6 +20,7 @@ interface PhraseCardProps {
 // checks the learner's pronunciation word by word.
 export function PhraseCard({ phrase, languageCode, canPractice }: PhraseCardProps) {
   const [isListening, setIsListening] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
   const [result, setResult] = useState<PronunciationResult | null>(null);
   const [heard, setHeard] = useState("");
   const [error, setError] = useState("");
@@ -28,8 +29,10 @@ export function PhraseCard({ phrase, languageCode, canPractice }: PhraseCardProp
   // Stop the microphone when the card leaves the screen
   useEffect(() => () => stopRef.current?.(), []);
 
-  async function handleMicPress() {
+  function handleMicPress() {
+    // Tapping again while listening stops right away
     if (isListening) {
+      setIsStopping(true);
       stopRef.current?.();
       return;
     }
@@ -40,14 +43,17 @@ export function PhraseCard({ phrase, languageCode, canPractice }: PhraseCardProp
     setIsListening(true);
     setResult(null);
     setError("");
-    stopRef.current = await listenOnce(locale, {
+    stopRef.current = listenOnce(locale, {
       onResult: (transcript) => {
         setHeard(transcript);
         setResult(comparePronunciation(phrase.text, transcript));
       },
       onError: setError,
-      onEnd: () => setIsListening(false),
-    });
+      onEnd: () => {
+        setIsListening(false);
+        setIsStopping(false);
+      },
+    }).stop;
   }
 
   return (
@@ -73,7 +79,7 @@ export function PhraseCard({ phrase, languageCode, canPractice }: PhraseCardProp
               testID="mic-button"
             >
               {isListening ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <Ionicons name="stop" size={18} color="#fff" />
               ) : (
                 <Ionicons name="mic" size={20} color={colors.primary.purple} />
               )}
@@ -84,7 +90,9 @@ export function PhraseCard({ phrase, languageCode, canPractice }: PhraseCardProp
 
       {isListening && (
         <Text className="body-sm text-lingua-purple mt-2">
-          Listening… say the sentence, tap again to stop.
+          {isStopping
+            ? "Checking…"
+            : "Listening… say the sentence, tap again to stop."}
         </Text>
       )}
 
