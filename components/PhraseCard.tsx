@@ -6,6 +6,7 @@ import { SpeakButton } from "@/components/SpeakButton";
 import { colors } from "@/constants/theme";
 import { LANGUAGES } from "@/data/languages";
 import { comparePronunciation, PronunciationResult } from "@/lib/pronunciation";
+import { stopSpeaking } from "@/lib/speech";
 import { listenOnce } from "@/lib/speechRecognition";
 import { LanguageCode, Phrase } from "@/types/learning";
 
@@ -40,6 +41,8 @@ export function PhraseCard({ phrase, languageCode, canPractice }: PhraseCardProp
     const locale =
       LANGUAGES.find((l) => l.code === languageCode)?.speechLocale ?? "en-US";
 
+    // The microphone must not hear the voice reading the sentence
+    stopSpeaking();
     setIsListening(true);
     setResult(null);
     setError("");
