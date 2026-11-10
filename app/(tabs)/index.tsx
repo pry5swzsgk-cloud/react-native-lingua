@@ -13,8 +13,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { images } from "@/constants/images";
 import { colors } from "@/constants/theme";
 import { LANGUAGES } from "@/data/languages";
-import { UNITS } from "@/data/units";
-import { useLanguageStore } from "@/store/languageStore";
+import { getNextLesson, getUnitOfLesson, getUnits } from "@/lib/progress";
+import { useLanguageStore, useStartUnitOrder } from "@/store/languageStore";
 import { useLearningStore } from "@/store/learningStore";
 import { LanguageCode } from "@/types/learning";
 
@@ -65,10 +65,18 @@ const PLAN_ITEMS = [
 
 export default function HomeScreen() {
   const { selectedLanguage } = useLanguageStore();
-  const { xpToday, dailyGoal, streak } = useLearningStore();
+  const { xpToday, dailyGoal, streak, completedLessonIds } = useLearningStore();
 
   const language = LANGUAGES.find((l) => l.code === selectedLanguage);
-  const unit = UNITS.find((u) => u.languageCode === selectedLanguage);
+  // The unit of the next open lesson (first unit as a fallback)
+  const startUnitOrder = useStartUnitOrder();
+  const nextLesson = getNextLesson(
+    selectedLanguage,
+    completedLessonIds,
+    startUnitOrder,
+  );
+  const unit =
+    (nextLesson && getUnitOfLesson(nextLesson)) ?? getUnits(selectedLanguage)[0];
   const greeting = getGreeting(selectedLanguage);
   const xpProgress =
     dailyGoal > 0 ? Math.min((xpToday / dailyGoal) * 100, 100) : 0;
@@ -85,9 +93,14 @@ export default function HomeScreen() {
         <View className="flex-row items-center justify-between mb-5">
           <View className="flex-row items-center gap-[10px]">
             {language ? (
-              <View className="w-[34px] h-[34px] rounded-full bg-surface items-center justify-center">
+              <TouchableOpacity
+                className="w-[34px] h-[34px] rounded-full bg-surface items-center justify-center"
+                activeOpacity={0.7}
+                onPress={() => router.push("/language-select")}
+                testID="change-language-button"
+              >
                 <Text className="text-xl">{language.flag}</Text>
-              </View>
+              </TouchableOpacity>
             ) : (
               <View className="w-[34px] h-[34px] rounded-full bg-surface" />
             )}
@@ -152,7 +165,7 @@ export default function HomeScreen() {
                 {language?.name ?? "Pick a language"}
               </Text>
               <Text className="font-poppins text-xs text-white/65 mt-0.5">
-                A1 · Unit {unit?.order ?? 1}
+                {unit?.level ?? "A1"} · Unit {unit?.order ?? 1}
               </Text>
             </View>
             <TouchableOpacity

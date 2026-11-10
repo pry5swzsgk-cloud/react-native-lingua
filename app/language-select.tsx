@@ -17,8 +17,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LanguageSelectScreen() {
-  const { setSelectedLanguage } = useLanguageStore();
-  const [selectedCode, setSelectedCode] = useState<string>(LANGUAGES[0].code);
+  const { selectedLanguage, setSelectedLanguage } = useLanguageStore();
+  // Preselect the current language so changing only the level is easy
+  const [selectedCode, setSelectedCode] = useState<string>(
+    selectedLanguage ?? LANGUAGES[0].code,
+  );
   const [search, setSearch] = useState("");
 
   const filtered = LANGUAGES.filter((lang) =>
@@ -109,7 +112,7 @@ export default function LanguageSelectScreen() {
           testID="language-confirm-button"
           onPress={() => {
             setSelectedLanguage(selectedCode as LanguageCode);
-            router.replace("/");
+            router.push("/level-select");
           }}
         >
           <Text className="font-poppins-semibold text-base text-white">

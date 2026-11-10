@@ -14,33 +14,32 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LessonCard } from "@/components/LessonCard";
 import { images } from "@/constants/images";
 import { colors } from "@/constants/theme";
-import { LESSONS } from "@/data/lessons";
-import { UNITS } from "@/data/units";
-import { useLanguageStore } from "@/store/languageStore";
+import {
+  getNextLesson,
+  getUnitLessons,
+  getUnitOfLesson,
+  getUnits,
+} from "@/lib/progress";
+import { useLanguageStore, useStartUnitOrder } from "@/store/languageStore";
 import { useLearningStore } from "@/store/learningStore";
-import { Lesson } from "@/types/learning";
 
 export default function LearnScreen() {
   const router = useRouter();
   const { selectedLanguage } = useLanguageStore();
   const { completedLessonIds } = useLearningStore();
 
-  const unit = UNITS.find((u) => u.languageCode === selectedLanguage);
-  const lessons = unit
-    ? (unit.lessonIds
-        .map((id) => LESSONS.find((l) => l.id === id))
-        .filter(Boolean) as Lesson[])
-    : [];
-
-  const completedCount = lessons.filter((l) =>
-    completedLessonIds.includes(l.id)
-  ).length;
-
-  const inProgressIndex = lessons.findIndex(
-    (l) => !completedLessonIds.includes(l.id)
+  const units = getUnits(selectedLanguage);
+  const startUnitOrder = useStartUnitOrder();
+  const nextLesson = getNextLesson(
+    selectedLanguage,
+    completedLessonIds,
+    startUnitOrder,
   );
+  // The unit the learner is currently working on (last unit when all is done)
+  const currentUnit =
+    (nextLesson && getUnitOfLesson(nextLesson)) ?? units[units.length - 1];
 
-  if (!selectedLanguage || !unit) {
+  if (!selectedLanguage || !currentUnit) {
     return (
       <SafeAreaView
         style={{ flex: 1, backgroundColor: colors.neutral.background }}
@@ -54,6 +53,11 @@ export default function LearnScreen() {
       </SafeAreaView>
     );
   }
+
+  const currentLessons = getUnitLessons(currentUnit);
+  const currentDone = currentLessons.filter((l) =>
+    completedLessonIds.includes(l.id),
+  ).length;
 
   return (
     <SafeAreaView
@@ -77,22 +81,15 @@ export default function LearnScreen() {
             className="flex-1 text-center font-poppins-semibold text-base text-text-primary"
             numberOfLines={1}
           >
-            {unit.title}
+            {currentUnit.title}
           </Text>
 
-          <TouchableOpacity
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons
-              name="bookmark-outline"
-              size={22}
-              color={colors.neutral.textPrimary}
-            />
-          </TouchableOpacity>
+          <View className="w-6" />
         </View>
 
         <Text className="caption text-center">
-          Unit {unit.order} · {completedCount}/{lessons.length} lessons
+          Unit {currentUnit.order} · {currentDone}/{currentLessons.length}{" "}
+          lessons
         </Text>
       </View>
 
@@ -114,36 +111,48 @@ export default function LearnScreen() {
           />
         </View>
 
-        {/* Lessons / Practice tabs */}
-        <View className="flex-row border-b border-border mb-5">
-          <View className="pb-3 mr-6 border-b-2 border-lingua-purple">
-            <Text className="font-poppins-semibold text-sm text-lingua-purple">
-              Lessons
-            </Text>
-          </View>
-          <View className="pb-3">
-            <Text className="font-poppins-semibold text-sm text-text-secondary">
-              Practice
-            </Text>
-          </View>
-        </View>
+        {/* One section per unit, easiest first. Every lesson is open. */}
+        {units.map((unit) => {
+          const lessons = getUnitLessons(unit);
+          const done = lessons.filter((l) =>
+            completedLessonIds.includes(l.id),
+          ).length;
 
-        {/* Lesson cards */}
-        <View className="gap-3">
-          {lessons.map((lesson, index) => (
-            <LessonCard
-              key={lesson.id}
-              lesson={lesson}
-              index={index}
-              isCompleted={completedLessonIds.includes(lesson.id)}
-              isInProgress={
-                !completedLessonIds.includes(lesson.id) &&
-                index === inProgressIndex
-              }
-              onPress={() => router.push(`/lesson/${lesson.id}`)}
-            />
-          ))}
-        </View>
+          return (
+            <View key={unit.id} className="mb-7" testID={`unit-${unit.order}`}>
+              <View className="flex-row items-center gap-2 mb-1">
+                <View className="bg-lingua-purple rounded-full px-2.5 py-0.5">
+                  <Text className="font-poppins-semibold text-[11px] text-white">
+                    {unit.level}
+                  </Text>
+                </View>
+                <Text className="caption">
+                  Unit {unit.order} · {done}/{lessons.length} done
+                </Text>
+              </View>
+              <Text className="h4">{unit.title}</Text>
+              <Text className="body-sm text-text-secondary mb-3">
+                {unit.description}
+                {unit.order < startUnitOrder
+                  ? " · Below your starting level, still open for review."
+                  : ""}
+              </Text>
+
+              <View className="gap-3">
+                {lessons.map((lesson, index) => (
+                  <LessonCard
+                    key={lesson.id}
+                    lesson={lesson}
+                    index={index}
+                    isCompleted={completedLessonIds.includes(lesson.id)}
+                    isInProgress={lesson.id === nextLesson?.id}
+                    onPress={() => router.push(`/lesson/${lesson.id}`)}
+                  />
+                ))}
+              </View>
+            </View>
+          );
+        })}
       </ScrollView>
     </SafeAreaView>
   );

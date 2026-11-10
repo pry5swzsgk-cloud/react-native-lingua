@@ -6,6 +6,7 @@ export const LANGUAGES: Language[] = [
     name: "Spanish",
     nativeName: "Español",
     flag: "🇪🇸",
+    speechLocale: "es-ES",
     color: "#FF9500",
   },
   {
@@ -13,6 +14,7 @@ export const LANGUAGES: Language[] = [
     name: "French",
     nativeName: "Français",
     flag: "🇫🇷",
+    speechLocale: "fr-FR",
     color: "#4D88FF",
   },
   {
@@ -20,6 +22,7 @@ export const LANGUAGES: Language[] = [
     name: "Japanese",
     nativeName: "日本語",
     flag: "🇯🇵",
+    speechLocale: "ja-JP",
     color: "#FF3B30",
   },
   // {
@@ -27,6 +30,7 @@ export const LANGUAGES: Language[] = [
   //   name: "Korean",
   //   nativeName: "한국어",
   //   flag: "🇰🇷",
+  //   speechLocale: "ko-KR",
   //   color: "#4D88FF",
   // },
   {
@@ -34,6 +38,7 @@ export const LANGUAGES: Language[] = [
     name: "German",
     nativeName: "Deutsch",
     flag: "🇩🇪",
+    speechLocale: "de-DE",
     color: "#FFCC00",
   },
   // {
@@ -41,6 +46,7 @@ export const LANGUAGES: Language[] = [
   //   name: "Chinese",
   //   nativeName: "中文",
   //   flag: "🇨🇳",
+  //   speechLocale: "zh-CN",
   //   color: "#FF3B30",
   // },
 ];

@@ -20,7 +20,7 @@ export const useLearningStore = create<LearningState>()(
       completedLessonIds: [],
       addXP: (amount) =>
         set((state) => ({
-          xpToday: Math.min(state.xpToday + amount, state.dailyGoal),
+          xpToday: state.xpToday + amount,
         })),
       completeLesson: (lessonId) =>
         set((state) => ({

@@ -41,6 +41,16 @@ export default {
           },
         },
       ],
+      [
+        // iOS shows these texts when Lingo first asks for the microphone
+        "expo-speech-recognition",
+        {
+          microphonePermission:
+            "Allow Lingo to use the microphone so you can practice speaking.",
+          speechRecognitionPermission:
+            "Allow Lingo to use speech recognition to check your pronunciation.",
+        },
+      ],
     ],
     experiments: {
       typedRoutes: true,
