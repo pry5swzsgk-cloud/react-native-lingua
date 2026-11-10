@@ -1,5 +1,5 @@
-import { useAuth, useUser } from "@clerk/expo";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import {
   Image,
   ScrollView,
@@ -14,7 +14,6 @@ import { images } from "@/constants/images";
 import { colors } from "@/constants/theme";
 import { LANGUAGES } from "@/data/languages";
 import { UNITS } from "@/data/units";
-import { posthog } from "@/lib/posthog";
 import { useLanguageStore } from "@/store/languageStore";
 import { useLearningStore } from "@/store/learningStore";
 import { LanguageCode } from "@/types/learning";
@@ -42,7 +41,7 @@ const PLAN_ITEMS = [
     iconColor: colors.primary.purple,
     title: "Lesson",
     subtitle: "At the café",
-    completed: true,
+    completed: false,
   },
   {
     id: "ai-conversation",
@@ -65,14 +64,11 @@ const PLAN_ITEMS = [
 ];
 
 export default function HomeScreen() {
-  const { user } = useUser();
-  const { signOut } = useAuth();
   const { selectedLanguage } = useLanguageStore();
   const { xpToday, dailyGoal, streak } = useLearningStore();
 
   const language = LANGUAGES.find((l) => l.code === selectedLanguage);
   const unit = UNITS.find((u) => u.languageCode === selectedLanguage);
-  const firstName = user?.firstName ?? "Learner";
   const greeting = getGreeting(selectedLanguage);
   const xpProgress =
     dailyGoal > 0 ? Math.min((xpToday / dailyGoal) * 100, 100) : 0;
@@ -89,21 +85,20 @@ export default function HomeScreen() {
         <View className="flex-row items-center justify-between mb-5">
           <View className="flex-row items-center gap-[10px]">
             {language ? (
-              <Image
-                source={{ uri: language.flag }}
-                className="w-[34px] h-[34px] rounded-full"
-              />
+              <View className="w-[34px] h-[34px] rounded-full bg-surface items-center justify-center">
+                <Text className="text-xl">{language.flag}</Text>
+              </View>
             ) : (
               <View className="w-[34px] h-[34px] rounded-full bg-surface" />
             )}
             <Text className="font-poppins-semibold text-base text-text-primary">
-              {greeting}, {firstName}! 👋
+              {greeting}! 👋
             </Text>
           </View>
 
           <View className="flex-row items-center gap-[14px]">
             <View className="flex-row items-center gap-1">
-              <Image source={images.streakFire} className="w-[22px] h-[22px]" />
+              <Image source={images.streakFire} style={styles.streakIcon} />
               <Text className="font-poppins-semibold text-[15px] text-streak">
                 {streak}
               </Text>
@@ -111,13 +106,6 @@ export default function HomeScreen() {
             <TouchableOpacity activeOpacity={0.7}>
               <Ionicons
                 name="notifications-outline"
-                size={24}
-                color={colors.neutral.textPrimary}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity activeOpacity={0.7} onPress={() => signOut()}>
-              <Ionicons
-                name="log-out-outline"
                 size={24}
                 color={colors.neutral.textPrimary}
               />
@@ -148,7 +136,7 @@ export default function HomeScreen() {
           </View>
           <Image
             source={images.treasure}
-            className="w-20 h-20"
+            style={styles.treasure}
             resizeMode="contain"
           />
         </View>
@@ -171,14 +159,7 @@ export default function HomeScreen() {
               className="bg-white rounded-xl py-2 px-[22px] self-start"
               activeOpacity={0.85}
               testID="continue-learning-button"
-              onPress={() => {
-                posthog.capture("continue_learning_tapped", {
-                  language_code: selectedLanguage,
-                  unit_order: unit?.order ?? 1,
-                  xp_today: xpToday,
-                  streak,
-                });
-              }}
+              onPress={() => router.navigate("/learn")}
             >
               <Text className="font-poppins-semibold text-[13px] text-lingua-purple">
                 Continue
@@ -187,7 +168,7 @@ export default function HomeScreen() {
           </View>
           <Image
             source={images.palace}
-            className="w-[130px] h-[160px]"
+            style={styles.palace}
             resizeMode="cover"
           />
         </View>
@@ -245,6 +226,9 @@ export default function HomeScreen() {
 
 // ScrollView.contentContainerStyle and shadow (iOS/Android) must stay in StyleSheet
 const styles = StyleSheet.create({
+  streakIcon: { width: 22, height: 22 },
+  treasure: { width: 80, height: 80 },
+  palace: { width: 130, height: 160 },
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 12,

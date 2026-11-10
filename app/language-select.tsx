@@ -1,6 +1,5 @@
 import { images } from "@/constants/images";
 import { LANGUAGES } from "@/data/languages";
-import { posthog } from "@/lib/posthog";
 import { useLanguageStore } from "@/store/languageStore";
 import { Language, LanguageCode } from "@/types/learning";
 import { Ionicons } from "@expo/vector-icons";
@@ -34,13 +33,15 @@ export default function LanguageSelectScreen() {
         className={`flex-row items-center py-3.5 px-3.5 bg-white border-[1.5px] rounded-[14px] ${isSelected ? "bg-[rgba(108,78,245,0.08)] border-lingua-purple" : "border-transparent"}`}
         activeOpacity={0.8}
       >
-        <Image source={{ uri: item.flag }} style={styles.flag} />
+        <View className="w-11 h-11 rounded-full border border-border bg-surface items-center justify-center">
+          <Text className="text-2xl">{item.flag}</Text>
+        </View>
         <View className="flex-1 ml-3">
           <Text className="font-poppins-semibold text-base text-text-primary">
             {item.name}
           </Text>
           <Text className="body-sm text-text-secondary">
-            {item.learners} learners
+            {item.nativeName}
           </Text>
         </View>
         {isSelected ? (
@@ -107,11 +108,6 @@ export default function LanguageSelectScreen() {
           activeOpacity={0.85}
           testID="language-confirm-button"
           onPress={() => {
-            const selectedLang = LANGUAGES.find((l) => l.code === selectedCode);
-            posthog.capture("language_selected", {
-              language_code: selectedCode,
-              language_name: selectedLang?.name ?? selectedCode,
-            });
             setSelectedLanguage(selectedCode as LanguageCode);
             router.replace("/");
           }}
@@ -129,13 +125,6 @@ export default function LanguageSelectScreen() {
 }
 
 const styles = StyleSheet.create({
-  flag: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-  },
   searchInput: {
     flex: 1,
     marginLeft: 8,

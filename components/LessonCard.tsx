@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { colors } from "@/constants/theme";
 import { Lesson } from "@/types/learning";
@@ -10,10 +10,6 @@ interface LessonCardProps {
   isCompleted: boolean;
   isInProgress: boolean;
   onPress: () => void;
-}
-
-function getLessonThumbnail(lessonId: string): string {
-  return `https://picsum.photos/seed/${lessonId}/160/100`;
 }
 
 export function LessonCard({
@@ -58,11 +54,9 @@ export function LessonCard({
       )}
 
       {isInProgress && (
-        <Image
-          source={{ uri: getLessonThumbnail(lesson.id) }}
-          style={styles.thumbnail}
-          resizeMode="cover"
-        />
+        <View className="w-[72px] h-14 rounded-[10px] ml-3 bg-white items-center justify-center">
+          <Text className="text-3xl">{lesson.icon}</Text>
+        </View>
       )}
     </TouchableOpacity>
   );
@@ -105,12 +99,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.semantic.success,
     alignItems: "center",
     justifyContent: "center",
-    marginLeft: 12,
-  },
-  thumbnail: {
-    width: 72,
-    height: 56,
-    borderRadius: 10,
     marginLeft: 12,
   },
 });

@@ -1,5 +1,4 @@
 import { images } from "@/constants/images";
-import { posthog } from "@/lib/posthog";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -11,15 +10,15 @@ export default function OnboardingScreen() {
       <View className="flex-1 px-6">
         {/* Logo header */}
         <View className="flex-row items-center justify-center gap-2 mt-4">
-          <Image source={images.mascotLogo} className="w-10 h-10" />
+          <Image source={images.mascotLogo} style={styles.logo} />
           <Text className="font-poppins-semibold text-xl text-text-primary">
-            lingua
+            lingo
           </Text>
         </View>
 
         {/* Hero heading */}
         <Text className="h1 mt-8">
-          {"Your AI language\n"}
+          {"Your free language\n"}
           <Text className="text-lingua-purple">teacher.</Text>
         </Text>
 
@@ -32,7 +31,7 @@ export default function OnboardingScreen() {
         <View className="flex-1 mt-4">
           <Image
             source={images.mascotWelcome}
-            className="flex-1 w-full"
+            style={styles.hero}
             resizeMode="contain"
           />
 
@@ -70,8 +69,7 @@ export default function OnboardingScreen() {
           activeOpacity={0.85}
           testID="get-started-button"
           onPress={() => {
-            posthog.capture("onboarding_get_started_tapped");
-            router.push("/(auth)/sign-up");
+            router.push("/language-select");
           }}
         >
           <Text className="font-poppins-semibold text-base text-white">
@@ -89,7 +87,10 @@ export default function OnboardingScreen() {
   );
 }
 
+// RN Image needs explicit sizes (className is ignored on web)
 const styles = StyleSheet.create({
+  logo: { width: 40, height: 40 },
+  hero: { flex: 1, width: "100%" },
   shadow: {
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },

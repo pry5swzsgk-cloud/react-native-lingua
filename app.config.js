@@ -1,19 +1,19 @@
 export default {
   expo: {
-    name: "duolingo-clone",
-    slug: "duolingo-clone",
+    name: "Lingo",
+    slug: "lingo",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
-    scheme: "duolingoclone",
+    scheme: "lingo",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.jsmastery.duolingo-clone",
+      bundleIdentifier: "com.lingoapp.lingo",
     },
     android: {
-      package: "com.jsmastery.duolingoclone",
+      package: "com.lingoapp.lingo",
       adaptiveIcon: {
         backgroundColor: "#E6F4FE",
         foregroundImage: "./assets/images/android-icon-foreground.png",
@@ -41,35 +41,12 @@ export default {
           },
         },
       ],
-      "@clerk/expo",
-      "expo-secure-store",
-      "@stream-io/video-react-native-sdk",
-      [
-        "@config-plugins/react-native-webrtc",
-        {
-          cameraPermission:
-            "Allow $(PRODUCT_NAME) to access your camera for video lessons.",
-          microphonePermission:
-            "Allow $(PRODUCT_NAME) to access your microphone for audio lessons.",
-        },
-      ],
-      [
-        "expo-build-properties",
-        {
-          android: {
-            minSdkVersion: 24,
-          },
-        },
-      ],
     ],
     experiments: {
       typedRoutes: true,
       reactCompiler: true,
-    },
-    extra: {
-      posthogProjectToken: process.env.POSTHOG_PROJECT_TOKEN,
-      posthogHost: process.env.POSTHOG_HOST,
-      streamApiKey: process.env.STREAM_API_KEY,
+      // Only set for the GitHub Pages build (site lives under /react-native-lingua)
+      ...(process.env.EXPO_BASE_URL ? { baseUrl: process.env.EXPO_BASE_URL } : {}),
     },
   },
 };

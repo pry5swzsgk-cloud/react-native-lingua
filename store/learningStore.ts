@@ -14,9 +14,9 @@ interface LearningState {
 export const useLearningStore = create<LearningState>()(
   persist(
     (set) => ({
-      xpToday: 15,
+      xpToday: 0,
       dailyGoal: 20,
-      streak: 12,
+      streak: 0,
       completedLessonIds: [],
       addXP: (amount) =>
         set((state) => ({
