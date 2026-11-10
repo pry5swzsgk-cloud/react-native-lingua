@@ -20,7 +20,7 @@ import {
   getUnitOfLesson,
   getUnits,
 } from "@/lib/progress";
-import { useLanguageStore } from "@/store/languageStore";
+import { useLanguageStore, useStartUnitOrder } from "@/store/languageStore";
 import { useLearningStore } from "@/store/learningStore";
 
 export default function LearnScreen() {
@@ -29,7 +29,12 @@ export default function LearnScreen() {
   const { completedLessonIds } = useLearningStore();
 
   const units = getUnits(selectedLanguage);
-  const nextLesson = getNextLesson(selectedLanguage, completedLessonIds);
+  const startUnitOrder = useStartUnitOrder();
+  const nextLesson = getNextLesson(
+    selectedLanguage,
+    completedLessonIds,
+    startUnitOrder,
+  );
   // The unit the learner is currently working on (last unit when all is done)
   const currentUnit =
     (nextLesson && getUnitOfLesson(nextLesson)) ?? units[units.length - 1];
@@ -128,6 +133,9 @@ export default function LearnScreen() {
               <Text className="h4">{unit.title}</Text>
               <Text className="body-sm text-text-secondary mb-3">
                 {unit.description}
+                {unit.order < startUnitOrder
+                  ? " · Below your starting level, still open for review."
+                  : ""}
               </Text>
 
               <View className="gap-3">

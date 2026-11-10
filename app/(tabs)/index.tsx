@@ -14,7 +14,7 @@ import { images } from "@/constants/images";
 import { colors } from "@/constants/theme";
 import { LANGUAGES } from "@/data/languages";
 import { getNextLesson, getUnitOfLesson, getUnits } from "@/lib/progress";
-import { useLanguageStore } from "@/store/languageStore";
+import { useLanguageStore, useStartUnitOrder } from "@/store/languageStore";
 import { useLearningStore } from "@/store/learningStore";
 import { LanguageCode } from "@/types/learning";
 
@@ -69,7 +69,12 @@ export default function HomeScreen() {
 
   const language = LANGUAGES.find((l) => l.code === selectedLanguage);
   // The unit of the next open lesson (first unit as a fallback)
-  const nextLesson = getNextLesson(selectedLanguage, completedLessonIds);
+  const startUnitOrder = useStartUnitOrder();
+  const nextLesson = getNextLesson(
+    selectedLanguage,
+    completedLessonIds,
+    startUnitOrder,
+  );
   const unit =
     (nextLesson && getUnitOfLesson(nextLesson)) ?? getUnits(selectedLanguage)[0];
   const greeting = getGreeting(selectedLanguage);
@@ -88,9 +93,14 @@ export default function HomeScreen() {
         <View className="flex-row items-center justify-between mb-5">
           <View className="flex-row items-center gap-[10px]">
             {language ? (
-              <View className="w-[34px] h-[34px] rounded-full bg-surface items-center justify-center">
+              <TouchableOpacity
+                className="w-[34px] h-[34px] rounded-full bg-surface items-center justify-center"
+                activeOpacity={0.7}
+                onPress={() => router.push("/language-select")}
+                testID="change-language-button"
+              >
                 <Text className="text-xl">{language.flag}</Text>
-              </View>
+              </TouchableOpacity>
             ) : (
               <View className="w-[34px] h-[34px] rounded-full bg-surface" />
             )}
