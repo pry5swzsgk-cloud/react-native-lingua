@@ -12,13 +12,36 @@ We are building a Duolingo-inspired AI language learning mobile app using Expo.
 
 The app teaches users languages through interactive lessons that may include:
 
-- video-based AI teacher lessons
-- audio lessons
-- chat-based AI tutor lessons
+- multiple-choice and translation exercises
+- listening exercises
+- pronunciation practice
+- an offline conversation tutor
 - vocabulary review
-- local XP and lesson completion
+- local XP, streaks, daily goals and lesson completion
 - language selection
 - beautiful mobile-first UI inspired by playful learning apps
+
+Use our own designs, mascot and lesson content. Never copy Duolingo logos,
+characters or other protected content.
+
+---
+
+## Free & Offline Rules (BINDING — these override everything else in this file)
+
+The app is completely free. These rules are not negotiable:
+
+1. No registration, no login, no user accounts.
+2. No subscriptions, no in-app purchases, no ads, no premium version.
+3. No locked lessons. Every lesson and feature is available to everyone.
+4. No heart/lives system that blocks learning.
+5. Progress is stored locally on the device (Zustand + AsyncStorage).
+6. The app must work offline. Do not load images, fonts or content from the internet.
+7. No paid APIs, paid databases, paid servers or analytics/tracking services.
+8. No hidden costs or dependencies that require an API key to run the app.
+9. Prefer open-source libraries that run on the device.
+
+If a feature seems to need a paid service, find a free on-device alternative,
+explain the trade-offs to the user, and ask before adding a library.
 
 This is primarily a learning project. The goal is to teach developers how to build a modern AI-powered Expo app feature by feature.
 
@@ -35,10 +58,10 @@ Use the following stack:
 - NativeWind / Tailwind CSS
 - Zustand
 - AsyncStorage
-- Clerk for authentication
-- Stream / GetStream for video and real-time communication
-- Stream Vision Agents for AI video teacher capability
-- Server-side API routes or backend functions for secrets, tokens, and AI calls
+- Expo SDK modules that work on-device (e.g. text-to-speech) when approved
+
+Not used (removed on purpose): Clerk, Stream, Vision Agents, OpenAI, PostHog,
+API routes or any backend.
 
 Do not introduce new major libraries unless there is a strong reason.
 
@@ -87,7 +110,6 @@ Use this structure unless there is a strong reason to change it:
 
 ```txt
 app/
-  (auth)/
   (tabs)/
   lesson/
 components/
@@ -348,19 +370,16 @@ Use AsyncStorage persistence where needed.
 
 ## lib/
 
-Use this for external service helpers.
+Use this for small helpers (e.g. answer checking, date helpers for streaks).
 
 Examples:
 
 ```txt
 lib/
-  clerk.ts
-  stream.ts
-  api.ts
+  answers.ts
+  dates.ts
   cn.ts
 ```
-
-Never expose secret keys in the mobile app.
 
 ---
 
@@ -398,23 +417,10 @@ When the user asks to build a feature:
 
 ---
 
-## AI / Stream / Vision Agent Rules
+## AI Feature Rules
 
-Use backend/serverless for:
-
-- Stream tokens
-- AI calls
-- Vision Agent sessions
-
-Never expose secrets in the frontend.
-
----
-
-## Clerk Rules
-
-Use Clerk for authentication.
-
-Do not build custom auth.
+AI-like features (conversation tutor, pronunciation feedback) must be free and
+run on the device or offline. No cloud AI APIs and no API keys.
 
 ---
 
@@ -465,14 +471,13 @@ Explain what changed and how to test.
 
 ## Important Constraints
 
-No database for this version.
+No database, no backend, no accounts.
 
 Use:
 
-- JSON for content
+- JSON/TS for content
 - Zustand for state
 - AsyncStorage for persistence
-- backend only for secure operations
 
 ---
 
