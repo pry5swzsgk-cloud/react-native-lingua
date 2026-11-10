@@ -108,7 +108,7 @@ export default function LearnScreen() {
             style={styles.heroImage}
           />
           <RNImage
-            source={images.mascotWelcome}
+            source={images.mascotDino}
             style={styles.mascotImage}
             resizeMode="contain"
           />
