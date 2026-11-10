@@ -8,7 +8,7 @@ You should think like a senior mobile developer, but explain and implement like 
 
 ## Project Overview
 
-We are building a Duolingo-inspired AI language learning mobile app using Expo.
+We are building **Lingo**, a free, offline language learning mobile app for iPhone (iOS first) using Expo, inspired by playful learning apps.
 
 The app teaches users languages through interactive lessons that may include:
 

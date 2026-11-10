@@ -12,13 +12,13 @@ export default function OnboardingScreen() {
         <View className="flex-row items-center justify-center gap-2 mt-4">
           <Image source={images.mascotLogo} className="w-10 h-10" />
           <Text className="font-poppins-semibold text-xl text-text-primary">
-            lingua
+            lingo
           </Text>
         </View>
 
         {/* Hero heading */}
         <Text className="h1 mt-8">
-          {"Your AI language\n"}
+          {"Your free language\n"}
           <Text className="text-lingua-purple">teacher.</Text>
         </Text>
 

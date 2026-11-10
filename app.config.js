@@ -1,19 +1,19 @@
 export default {
   expo: {
-    name: "duolingo-clone",
-    slug: "duolingo-clone",
+    name: "Lingo",
+    slug: "lingo",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
-    scheme: "duolingoclone",
+    scheme: "lingo",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.jsmastery.duolingo-clone",
+      bundleIdentifier: "com.lingoapp.lingo",
     },
     android: {
-      package: "com.jsmastery.duolingoclone",
+      package: "com.lingoapp.lingo",
       adaptiveIcon: {
         backgroundColor: "#E6F4FE",
         foregroundImage: "./assets/images/android-icon-foreground.png",
