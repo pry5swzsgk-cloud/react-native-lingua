@@ -64,6 +64,9 @@ function errorMessage(code: string): string {
     case "no-speech":
     case "speech-timeout":
       return "I didn't hear anything. Tap the mic and try again.";
+    case "no-result":
+      // The recognizer ended without understanding a single word
+      return "I couldn't understand that. Speak a little louder and closer to the device, then try again. [no-result]";
     case "language-not-supported":
       return "Your device has no speech recognition for this language. [language-not-supported]";
     case "network":
@@ -78,6 +81,10 @@ function errorMessage(code: string): string {
 // straight from a tap, and it silently refuses later requests after one
 // refusal. Asking here, inside the tap, makes the question appear.
 // Returns an error code, or null when recognition may start.
+// Remembers that the browser allowed the microphone in this visit, so later
+// taps can start the recognizer right away, still inside the tap.
+let webMicrophoneAllowed = false;
+
 async function requestWebMicrophone(): Promise<string | null> {
   const media =
     typeof navigator !== "undefined" ? navigator.mediaDevices : undefined;
@@ -89,6 +96,7 @@ async function requestWebMicrophone(): Promise<string | null> {
     // Only the permission was needed. The recognizer opens the microphone
     // itself, and two open microphones would get in each other's way.
     stream.getTracks().forEach((track) => track.stop());
+    webMicrophoneAllowed = true;
     return null;
   } catch (error) {
     const name = error instanceof Error ? error.name : "";
@@ -103,6 +111,9 @@ async function requestWebMicrophone(): Promise<string | null> {
 }
 
 interface ListenHandlers {
+  // What has been understood so far, while the learner is still speaking
+  onPartial?: (transcript: string) => void;
+  // The final sentence, used to check the pronunciation (called once)
   onResult: (transcript: string) => void;
   onError: (message: string) => void;
   onEnd: () => void;
@@ -113,33 +124,65 @@ interface ListenHandlers {
 const STOP_GRACE_MS = 1500;
 // Never listen forever, even if the learner forgets to tap again.
 const MAX_LISTEN_MS = 15000;
+// Once words were heard, this much silence means the sentence is finished.
+const SILENCE_MS = 1500;
+// After stop(), how long to wait for a final result before using the words
+// already understood.
+const RESULT_WAIT_MS = 700;
 
 // Listens for one sentence in the given locale (e.g. "fr-FR").
 // Returns right away; stop() works at any moment, even while the
 // microphone permission is still being requested.
+//
+// Recognizers differ a lot: Chrome marks the last result as final, Safari
+// often only sends "interim" results and then simply ends. So every result
+// is remembered, and when listening ends the best text heard so far is
+// used, whether or not it was marked as final.
 export function listenOnce(
   locale: string,
-  { onResult, onError, onEnd }: ListenHandlers,
+  { onPartial, onResult, onError, onEnd }: ListenHandlers,
 ): { stop: () => void } {
   const recognition = loadModule();
   let stopRequested = false;
   let ended = false;
   let started = false;
+  let delivered = false;
+  let lastTranscript = "";
+  let silenceTimer: ReturnType<typeof setTimeout> | null = null;
   const subscriptions: { remove: () => void }[] = [];
   const timers: ReturnType<typeof setTimeout>[] = [];
+
+  // Hands the sentence to the screen, exactly once
+  function deliver(transcript: string) {
+    if (delivered) return;
+    delivered = true;
+    onResult(transcript);
+  }
 
   // Runs exactly once, no matter how listening ends
   function finish() {
     if (ended) return;
     ended = true;
     timers.forEach(clearTimeout);
+    if (silenceTimer) clearTimeout(silenceTimer);
     subscriptions.forEach((subscription) => subscription.remove());
     onEnd();
   }
 
+  // Note: the web module keeps its browser listeners attached after
+  // remove(), so events can still arrive once listening has finished.
+  // Every handler below therefore ignores anything after the end.
+
   function fail(code: string) {
-    const message = errorMessage(code);
-    if (message) onError(message);
+    if (ended) return;
+    if (code === "not-allowed") webMicrophoneAllowed = false; // ask again next time
+    // Words were understood before the problem: check those instead
+    if (!delivered && lastTranscript && code !== "not-allowed") {
+      deliver(lastTranscript);
+    } else {
+      const message = errorMessage(code);
+      if (message) onError(message);
+    }
     finish();
   }
 
@@ -151,18 +194,56 @@ export function listenOnce(
       return;
     }
     recognition.stop(); // finishes the sentence and reports what it heard
+    // Words were already understood: don't keep the learner waiting for a
+    // final result that Safari may never send
+    timers.push(
+      setTimeout(() => {
+        if (ended || !lastTranscript) return;
+        deliver(lastTranscript);
+        finish();
+        recognition.abort();
+      }, RESULT_WAIT_MS),
+    );
     timers.push(setTimeout(() => recognition.abort(), STOP_GRACE_MS));
     // abort() should end things; make sure the screen recovers regardless
-    timers.push(setTimeout(finish, STOP_GRACE_MS + 1000));
+    timers.push(setTimeout(() => handleEnd(), STOP_GRACE_MS + 1000));
+  }
+
+  function handleResult(transcript: string, isFinal: boolean) {
+    if (ended) return;
+    const text = transcript.trim();
+    if (!text) return;
+    lastTranscript = text;
+
+    if (isFinal) {
+      deliver(text);
+      return;
+    }
+    onPartial?.(text);
+    // Restart the silence countdown with every new word
+    if (silenceTimer) clearTimeout(silenceTimer);
+    silenceTimer = setTimeout(stop, SILENCE_MS);
+  }
+
+  function handleEnd() {
+    if (ended) return;
+    if (!delivered) {
+      if (lastTranscript) deliver(lastTranscript);
+      else if (!stopRequested) onError(errorMessage("no-result"));
+    }
+    finish();
   }
 
   async function begin() {
     if (!recognition) return fail("unavailable");
 
-    // Step 1: permission for the microphone
+    // Step 1: permission for the microphone. On the web this is skipped
+    // once allowed, so the recognizer starts directly inside the tap.
     if (Platform.OS === "web") {
-      const problem = await requestWebMicrophone();
-      if (problem) return fail(problem);
+      if (!webMicrophoneAllowed) {
+        const problem = await requestWebMicrophone();
+        if (problem) return fail(problem);
+      }
     } else {
       const permission = await recognition.requestPermissionsAsync();
       if (!permission.granted) return fail("not-allowed");
@@ -170,20 +251,19 @@ export function listenOnce(
     if (stopRequested) return; // the learner cancelled while we were waiting
 
     // Step 2: start the recognizer
-
     subscriptions.push(
       recognition.addListener("result", (event) => {
         const best = event.results[0];
-        if (event.isFinal && best) onResult(best.transcript);
+        if (best) handleResult(best.transcript, event.isFinal);
       }),
       recognition.addListener("error", (event) => fail(event.error)),
-      recognition.addListener("end", finish),
+      recognition.addListener("end", handleEnd),
     );
 
     try {
       recognition.start({
         lang: locale,
-        interimResults: false,
+        interimResults: true,
         maxAlternatives: 1,
         continuous: false,
       });

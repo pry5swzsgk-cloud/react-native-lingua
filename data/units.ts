@@ -10,7 +10,7 @@ export const UNITS: Unit[] = [
     title: 'Greetings & Basics',
     description: 'Start your Spanish journey with everyday phrases',
     order: 1,
-    lessonIds: ['es-lesson-1', 'es-lesson-2', 'es-lesson-3'],
+    lessonIds: ['es-lesson-1', 'es-lesson-2', 'es-lesson-3', 'es-lesson-4', 'es-lesson-5'],
   },
   {
     id: 'es-unit-2',
@@ -19,7 +19,7 @@ export const UNITS: Unit[] = [
     title: 'Everyday Life',
     description: 'Talk about your family and your daily routine',
     order: 2,
-    lessonIds: ['es-a2-lesson-1', 'es-a2-lesson-2'],
+    lessonIds: ['es-a2-lesson-1', 'es-a2-lesson-2', 'es-a2-lesson-3', 'es-a2-lesson-4', 'es-a2-lesson-5'],
   },
   {
     id: 'es-unit-3',
@@ -28,7 +28,7 @@ export const UNITS: Unit[] = [
     title: 'Past & Future',
     description: 'Tell stories, make plans and share opinions',
     order: 3,
-    lessonIds: ['es-b1-lesson-1', 'es-b1-lesson-2'],
+    lessonIds: ['es-b1-lesson-1', 'es-b1-lesson-2', 'es-b1-lesson-3', 'es-b1-lesson-4', 'es-b1-lesson-5'],
   },
 
   // ─── French ────────────────────────────────────────────────────────────────

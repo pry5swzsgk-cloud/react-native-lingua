@@ -31,6 +31,8 @@ export function SpeakExercise({
   const [isListening, setIsListening] = useState(false);
   const [result, setResult] = useState<PronunciationResult | null>(null);
   const [heard, setHeard] = useState("");
+  // Words understood so far, shown live while listening
+  const [liveText, setLiveText] = useState("");
   const [error, setError] = useState("");
   const stopRef = useRef<(() => void) | null>(null);
 
@@ -53,7 +55,9 @@ export function SpeakExercise({
     setIsListening(true);
     setResult(null);
     setError("");
+    setLiveText("");
     stopRef.current = listenOnce(locale, {
+      onPartial: setLiveText,
       onResult: (transcript) => {
         const comparison = comparePronunciation(exercise.text, transcript);
         playSound(comparison.passed ? "correct" : "wrong");
@@ -107,6 +111,14 @@ export function SpeakExercise({
             <Text className="body-sm text-text-secondary mt-3">
               {isListening ? "Listening… tap to stop" : "Tap to speak"}
             </Text>
+            {isListening && liveText !== "" && (
+              <Text
+                className="body-md text-text-primary text-center mt-2"
+                testID="live-transcript"
+              >
+                I hear: “{liveText}”
+              </Text>
+            )}
           </View>
         )}
 

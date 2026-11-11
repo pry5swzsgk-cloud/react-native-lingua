@@ -1,5 +1,6 @@
 import { ELEMENTARY_LESSONS } from '@/data/lessons-elementary';
 import { INTERMEDIATE_LESSONS } from '@/data/lessons-intermediate';
+import { SPANISH_EXTRA_LESSONS } from '@/data/lessons-spanish';
 import { Lesson } from '@/types/learning';
 
 export const LESSONS: Lesson[] = [
@@ -1035,4 +1036,5 @@ export const LESSONS: Lesson[] = [
   // ─── Harder levels (A2 and B1) ─────────────────────────────────────────────
   ...ELEMENTARY_LESSONS,
   ...INTERMEDIATE_LESSONS,
+  ...SPANISH_EXTRA_LESSONS,
 ];
