@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
+import { PronunciationFeedback } from "@/components/PronunciationFeedback";
 import { SpeakButton } from "@/components/SpeakButton";
 import { colors } from "@/constants/theme";
 import { LANGUAGES } from "@/data/languages";
@@ -105,22 +106,11 @@ export function PhraseCard({ phrase, languageCode, canPractice }: PhraseCardProp
 
       {result && !isListening && (
         <View className="mt-2 pt-2 border-t border-border" testID="speech-result">
-          <Text className="font-poppins-semibold text-sm">
-            {result.words.map((word, index) => (
-              <Text
-                key={`${word.text}-${index}`}
-                className={word.ok ? "text-success" : "text-error"}
-              >
-                {word.text}
-                {phrase.text.includes(" ") ? " " : ""}
-              </Text>
-            ))}
-          </Text>
-          <Text className="body-sm text-text-secondary mt-1">
-            {result.passed
-              ? `Great job! ${Math.round(result.score * 100)}% matched.`
-              : `${Math.round(result.score * 100)}% matched. I heard: “${heard}”. Try again!`}
-          </Text>
+          <PronunciationFeedback
+            sentence={phrase.text}
+            result={result}
+            heard={heard}
+          />
         </View>
       )}
     </View>

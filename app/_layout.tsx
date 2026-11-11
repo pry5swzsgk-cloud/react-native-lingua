@@ -32,7 +32,8 @@ export default function RootLayout() {
       <Stack.Screen name="language-select" />
       <Stack.Screen name="level-select" />
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="lesson" />
+      <Stack.Screen name="lesson/[id]" />
+      <Stack.Screen name="practice/[id]" />
     </Stack>
   );
 }

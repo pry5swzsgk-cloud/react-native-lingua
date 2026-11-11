@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,19 +12,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PhraseCard } from "@/components/PhraseCard";
 import { SpeakButton } from "@/components/SpeakButton";
-import { images } from "@/constants/images";
 import { colors } from "@/constants/theme";
 import { LESSONS } from "@/data/lessons";
-import { getLessonAfter, getUnitOfLesson } from "@/lib/progress";
+import { getUnitOfLesson } from "@/lib/progress";
 import { isSpeechRecognitionSupported } from "@/lib/speechRecognition";
 import { useLearningStore } from "@/store/learningStore";
 
-// Offline lesson screen: everything comes from data/lessons.ts,
-// progress is saved on the device via the learning store.
+// First half of a lesson: read and listen to the new words and phrases.
+// The exercises that complete the lesson live in app/practice/[id].tsx.
 export default function LessonScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { completedLessonIds, completeLesson, addXP } = useLearningStore();
+  const { completedLessonIds } = useLearningStore();
 
   const lesson = LESSONS.find((l) => l.id === id);
   // null until checked; speech recognition is missing in some browsers
@@ -34,11 +32,6 @@ export default function LessonScreen() {
   useEffect(() => {
     setCanPractice(isSpeechRecognitionSupported());
   }, []);
-  // Which lesson was just finished and how much XP it gave (0 on a repeat)
-  const [finished, setFinished] = useState<{ id: string; xp: number } | null>(
-    null,
-  );
-
   if (!lesson) {
     return (
       <SafeAreaView
@@ -53,90 +46,6 @@ export default function LessonScreen() {
 
   const isCompleted = completedLessonIds.includes(lesson.id);
   const languageCode = getUnitOfLesson(lesson)?.languageCode ?? null;
-
-  function handleComplete() {
-    if (!lesson) return;
-    if (!isCompleted) {
-      completeLesson(lesson.id);
-      addXP(lesson.xpReward);
-    }
-    setFinished({ id: lesson.id, xp: isCompleted ? 0 : lesson.xpReward });
-  }
-
-  if (finished?.id === lesson.id) {
-    const nextLesson = getLessonAfter(lesson, completedLessonIds);
-    const nextUnit = nextLesson && getUnitOfLesson(nextLesson);
-    const isLevelUp =
-      nextUnit && nextUnit.level !== getUnitOfLesson(lesson)?.level;
-
-    return (
-      <SafeAreaView
-        style={{ flex: 1, backgroundColor: colors.neutral.background }}
-      >
-        <View className="flex-1 items-center justify-center px-6">
-          <Image
-            source={images.mascotDog}
-            style={styles.mascot}
-            resizeMode="contain"
-          />
-          <Text className="h2 text-center mt-4">Lesson complete!</Text>
-          <Text className="body-md text-text-secondary text-center mt-1">
-            {finished.xp > 0
-              ? `You earned +${finished.xp} XP`
-              : "Nice review! You already earned the XP for this lesson."}
-          </Text>
-
-          {nextLesson ? (
-            <View
-              className="w-full bg-surface rounded-2xl px-4 py-3 mt-8"
-              testID="next-lesson-card"
-            >
-              <Text className="caption">
-                {isLevelUp
-                  ? `Level up! Next: ${nextUnit.level} · ${nextUnit.title}`
-                  : "Up next"}
-              </Text>
-              <Text className="font-poppins-semibold text-base text-text-primary">
-                {nextLesson.icon} {nextLesson.title}
-              </Text>
-              <Text className="body-sm text-text-secondary">
-                {nextLesson.description}
-              </Text>
-            </View>
-          ) : (
-            <Text className="body-md text-center mt-8">
-              🎉 You finished every lesson in this course!
-            </Text>
-          )}
-        </View>
-
-        <View className="px-5 pt-3 pb-4 gap-3">
-          {nextLesson && (
-            <TouchableOpacity
-              className="bg-lingua-purple rounded-2xl items-center py-4"
-              activeOpacity={0.85}
-              onPress={() => router.replace(`/lesson/${nextLesson.id}`)}
-              testID="next-lesson-button"
-            >
-              <Text className="font-poppins-semibold text-base text-white">
-                Start next lesson
-              </Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            className="rounded-2xl items-center py-4 border border-border"
-            activeOpacity={0.85}
-            onPress={() => router.back()}
-            testID="back-to-lessons-button"
-          >
-            <Text className="font-poppins-semibold text-base text-text-primary">
-              Back to lessons
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.neutral.background }}>
@@ -219,18 +128,18 @@ export default function LessonScreen() {
         </View>
       </ScrollView>
 
-      {/* Complete button */}
+      {/* Exercises button */}
       <View className="px-5 pt-3 pb-4">
         <TouchableOpacity
           className="bg-lingua-purple rounded-2xl items-center py-4"
           activeOpacity={0.85}
-          onPress={handleComplete}
-          testID="lesson-complete-button"
+          onPress={() => router.push(`/practice/${lesson.id}`)}
+          testID="start-exercises-button"
         >
           <Text className="font-poppins-semibold text-base text-white">
             {isCompleted
-              ? "Continue"
-              : `Complete lesson · +${lesson.xpReward} XP`}
+              ? "Practice again"
+              : `Start exercises · +${lesson.xpReward} XP`}
           </Text>
         </TouchableOpacity>
       </View>
@@ -240,7 +149,6 @@ export default function LessonScreen() {
 
 // ScrollView.contentContainerStyle and shadows must stay in StyleSheet
 const styles = StyleSheet.create({
-  mascot: { width: 180, height: 180 },
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 24,
