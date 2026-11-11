@@ -15,7 +15,11 @@ import { colors } from "@/constants/theme";
 import { LANGUAGES } from "@/data/languages";
 import { getNextLesson, getUnitOfLesson, getUnits } from "@/lib/progress";
 import { useLanguageStore, useStartUnitOrder } from "@/store/languageStore";
-import { useLearningStore } from "@/store/learningStore";
+import {
+  useLearningStore,
+  useStreak,
+  useTodayXP,
+} from "@/store/learningStore";
 import { LanguageCode } from "@/types/learning";
 
 function getGreeting(langCode: LanguageCode | null): string {
@@ -65,7 +69,9 @@ const PLAN_ITEMS = [
 
 export default function HomeScreen() {
   const { selectedLanguage } = useLanguageStore();
-  const { xpToday, dailyGoal, streak, completedLessonIds } = useLearningStore();
+  const { dailyGoal, completedLessonIds } = useLearningStore();
+  const xpToday = useTodayXP();
+  const streak = useStreak();
 
   const language = LANGUAGES.find((l) => l.code === selectedLanguage);
   // The unit of the next open lesson (first unit as a fallback)
@@ -112,7 +118,10 @@ export default function HomeScreen() {
           <View className="flex-row items-center gap-[14px]">
             <View className="flex-row items-center gap-1">
               <Image source={images.streakFire} style={styles.streakIcon} />
-              <Text className="font-poppins-semibold text-[15px] text-streak">
+              <Text
+                className="font-poppins-semibold text-[15px] text-streak"
+                testID="home-streak"
+              >
                 {streak}
               </Text>
             </View>
@@ -133,7 +142,10 @@ export default function HomeScreen() {
               Daily goal
             </Text>
             <Text>
-              <Text className="font-poppins-bold text-[28px] text-text-primary leading-[34px]">
+              <Text
+                className="font-poppins-bold text-[28px] text-text-primary leading-[34px]"
+                testID="home-xp-today"
+              >
                 {xpToday}
               </Text>
               <Text className="font-poppins text-sm text-text-secondary leading-[34px]">
