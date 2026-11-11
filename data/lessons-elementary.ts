@@ -5,6 +5,7 @@ export const ELEMENTARY_LESSONS: Lesson[] = [
   {
     id: "es-a2-lesson-1",
     unitId: "es-unit-2",
+    theme: "family",
     title: "Family",
     description: "Talk about the people in your family",
     icon: "👨‍👩‍👧",
@@ -59,6 +60,7 @@ export const ELEMENTARY_LESSONS: Lesson[] = [
   {
     id: "es-a2-lesson-2",
     unitId: "es-unit-2",
+    theme: "routine",
     title: "Daily Routine",
     description: "Describe what you do every day",
     icon: "⏰",
@@ -113,6 +115,7 @@ export const ELEMENTARY_LESSONS: Lesson[] = [
   {
     id: "fr-a2-lesson-1",
     unitId: "fr-unit-2",
+    theme: "family",
     title: "Family",
     description: "Talk about the people in your family",
     icon: "👨‍👩‍👧",
@@ -167,6 +170,7 @@ export const ELEMENTARY_LESSONS: Lesson[] = [
   {
     id: "fr-a2-lesson-2",
     unitId: "fr-unit-2",
+    theme: "routine",
     title: "Daily Routine",
     description: "Describe what you do every day",
     icon: "⏰",
@@ -221,6 +225,7 @@ export const ELEMENTARY_LESSONS: Lesson[] = [
   {
     id: "ja-a2-lesson-1",
     unitId: "ja-unit-2",
+    theme: "family",
     title: "家族 — Family",
     description: "Talk about the people in your family",
     icon: "👨‍👩‍👧",
@@ -275,6 +280,7 @@ export const ELEMENTARY_LESSONS: Lesson[] = [
   {
     id: "ja-a2-lesson-2",
     unitId: "ja-unit-2",
+    theme: "routine",
     title: "毎日 — Daily Routine",
     description: "Describe what you do every day",
     icon: "⏰",
@@ -329,6 +335,7 @@ export const ELEMENTARY_LESSONS: Lesson[] = [
   {
     id: "de-a2-lesson-1",
     unitId: "de-unit-2",
+    theme: "family",
     title: "Familie",
     description: "Talk about the people in your family",
     icon: "👨‍👩‍👧",
@@ -383,6 +390,7 @@ export const ELEMENTARY_LESSONS: Lesson[] = [
   {
     id: "de-a2-lesson-2",
     unitId: "de-unit-2",
+    theme: "routine",
     title: "Mein Tag",
     description: "Describe what you do every day",
     icon: "⏰",

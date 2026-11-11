@@ -48,9 +48,33 @@ export interface AITeacherPrompt {
   topics: string[];
 }
 
+// What a lesson is about. The progress map shows the theme of the lesson
+// the learner is working on (see data/themes.ts).
+export type ThemeId =
+  | "greetings"
+  | "introductions"
+  | "numbers"
+  | "colors"
+  | "actions"
+  | "food"
+  | "family"
+  | "routine"
+  | "past"
+  | "plans";
+
+export interface Theme {
+  id: ThemeId;
+  title: string;
+  emoji: string;
+  background: string; // soft color behind the map
+  accent: string; // stronger color for lines and badges
+  decor: string[]; // emojis scattered over the background
+}
+
 export interface Lesson {
   id: string;
   unitId: string;
+  theme: ThemeId;
   title: string;
   description: string;
   icon: string;

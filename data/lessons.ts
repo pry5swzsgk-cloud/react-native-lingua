@@ -8,6 +8,7 @@ export const LESSONS: Lesson[] = [
   {
     id: 'es-lesson-1',
     unitId: 'es-unit-1',
+    theme: 'greetings',
     title: 'Hola! Greetings',
     description: 'Learn how to say hello and goodbye in Spanish',
     icon: '👋',
@@ -70,6 +71,7 @@ export const LESSONS: Lesson[] = [
   {
     id: 'es-lesson-2',
     unitId: 'es-unit-1',
+    theme: 'introductions',
     title: 'Introductions',
     description: 'Introduce yourself and ask for names',
     icon: '🙋',
@@ -126,6 +128,7 @@ export const LESSONS: Lesson[] = [
   {
     id: 'es-lesson-3',
     unitId: 'es-unit-1',
+    theme: 'numbers',
     title: 'Numbers 1–10',
     description: 'Count from one to ten in Spanish',
     icon: '🔢',
@@ -187,6 +190,7 @@ export const LESSONS: Lesson[] = [
   {
     id: 'fr-lesson-1',
     unitId: 'fr-unit-1',
+    theme: 'greetings',
     title: 'Bonjour! Greetings',
     description: 'Learn everyday French greetings',
     icon: '👋',
@@ -242,6 +246,7 @@ export const LESSONS: Lesson[] = [
   {
     id: 'fr-lesson-2',
     unitId: 'fr-unit-1',
+    theme: 'introductions',
     title: 'Introductions',
     description: 'Say your name and learn about others in French',
     icon: '🙋',
@@ -292,6 +297,7 @@ export const LESSONS: Lesson[] = [
   {
     id: 'ja-lesson-1',
     unitId: 'ja-unit-1',
+    theme: 'greetings',
     title: 'こんにちは — Greetings',
     description: 'Learn essential Japanese greetings',
     icon: '🎌',
@@ -347,6 +353,7 @@ export const LESSONS: Lesson[] = [
   {
     id: 'ja-lesson-2',
     unitId: 'ja-unit-1',
+    theme: 'introductions',
     title: 'Self Introduction',
     description: 'Introduce yourself in Japanese',
     icon: '🙋',
@@ -397,6 +404,7 @@ export const LESSONS: Lesson[] = [
   {
     id: 'de-lesson-1',
     unitId: 'de-unit-1',
+    theme: 'greetings',
     title: 'Hallo! Greetings',
     description: 'Learn how to greet people in German',
     icon: '👋',
@@ -452,6 +460,7 @@ export const LESSONS: Lesson[] = [
   {
     id: 'de-lesson-2',
     unitId: 'de-unit-1',
+    theme: 'introductions',
     title: 'Introductions',
     description: 'Say your name and meet new people in German',
     icon: '🙋',
@@ -510,6 +519,7 @@ export const LESSONS: Lesson[] = [
   {
     id: 'fr-lesson-3',
     unitId: 'fr-unit-1',
+    theme: 'numbers',
     title: 'Numbers 1–10',
     description: 'Count from one to ten in French',
     icon: '🔢',
@@ -569,6 +579,7 @@ export const LESSONS: Lesson[] = [
   {
     id: 'fr-lesson-4',
     unitId: 'fr-unit-1',
+    theme: 'colors',
     title: 'Colors',
     description: 'Learn basic colors in French',
     icon: '🎨',
@@ -624,6 +635,7 @@ export const LESSONS: Lesson[] = [
   {
     id: 'fr-lesson-5',
     unitId: 'fr-unit-1',
+    theme: 'food',
     title: 'At the Café',
     description: 'Order food and drinks at a French café',
     icon: '☕',
@@ -680,6 +692,7 @@ export const LESSONS: Lesson[] = [
   {
     id: 'ja-lesson-3',
     unitId: 'ja-unit-1',
+    theme: 'numbers',
     title: '数字 — Numbers 1–10',
     description: 'Learn to count from one to ten in Japanese',
     icon: '🔢',
@@ -739,6 +752,7 @@ export const LESSONS: Lesson[] = [
   {
     id: 'ja-lesson-4',
     unitId: 'ja-unit-1',
+    theme: 'actions',
     title: 'Daily Verbs',
     description: 'Learn essential everyday action words in Japanese',
     icon: '🏃',
@@ -793,6 +807,7 @@ export const LESSONS: Lesson[] = [
   {
     id: 'ja-lesson-5',
     unitId: 'ja-unit-1',
+    theme: 'food',
     title: 'Food & Drinks',
     description: 'Learn vocabulary for food and drinks in Japanese',
     icon: '🍣',
@@ -849,6 +864,7 @@ export const LESSONS: Lesson[] = [
   {
     id: 'de-lesson-3',
     unitId: 'de-unit-1',
+    theme: 'numbers',
     title: 'Numbers 1–10',
     description: 'Count from one to ten in German',
     icon: '🔢',
@@ -908,6 +924,7 @@ export const LESSONS: Lesson[] = [
   {
     id: 'de-lesson-4',
     unitId: 'de-unit-1',
+    theme: 'colors',
     title: 'Colors',
     description: 'Learn basic colors in German',
     icon: '🎨',
@@ -963,6 +980,7 @@ export const LESSONS: Lesson[] = [
   {
     id: 'de-lesson-5',
     unitId: 'de-unit-1',
+    theme: 'food',
     title: 'Im Café',
     description: 'Order coffee and food at a German café',
     icon: '☕',
