@@ -1,8 +1,10 @@
 import { Platform } from "react-native";
 
-// Short feedback sounds, made on the fly with the browser's Web Audio API.
-// No sound files, no library, works offline. In a native iOS/Android build
-// this stays silent until an audio library is added.
+import { sounds } from "@/constants/sounds";
+
+// Short feedback sounds that work offline:
+//   - in the browser they are synthesized with the Web Audio API
+//   - in the iOS/Android app expo-audio plays the files in assets/sounds
 
 export type SoundName = "correct" | "wrong" | "tick" | "complete";
 
@@ -100,10 +102,42 @@ function schedule(audio: AudioContext, notes: Note[]) {
   }
 }
 
-// Plays a feedback sound. Never throws: if the browser has no audio or
+// One player per sound, created the first time it is needed
+type NativePlayer = { seekTo: (seconds: number) => Promise<void>; play: () => void };
+const nativePlayers: Partial<Record<SoundName, NativePlayer>> = {};
+let nativeReady = false;
+
+function playNative(name: SoundName) {
+  // Loaded only in the app: expo-audio is not needed in the browser
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const audio = require("expo-audio") as typeof import("expo-audio");
+
+  if (!nativeReady) {
+    nativeReady = true;
+    // Feedback sounds should also be heard when the iPhone's silent switch
+    // is on, and must not stop music the learner is playing.
+    audio
+      .setAudioModeAsync({ playsInSilentMode: true, interruptionMode: "mixWithOthers" })
+      .catch(() => {});
+  }
+
+  const player = (nativePlayers[name] ??= audio.createAudioPlayer(sounds[name]));
+  // Rewind first, so the sound also plays when it is triggered again quickly
+  player
+    .seekTo(0)
+    .catch(() => {})
+    .finally(() => player.play());
+}
+
+// Plays a feedback sound. Never throws: if the device has no audio or
 // blocks it, the app simply stays quiet.
 export function playSound(name: SoundName) {
   try {
+    if (Platform.OS !== "web") {
+      playNative(name);
+      return;
+    }
+
     const audio = getContext();
     if (!audio) return;
 
