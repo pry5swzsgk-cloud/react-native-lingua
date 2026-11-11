@@ -25,6 +25,8 @@ export function PhraseCard({ phrase, languageCode, canPractice }: PhraseCardProp
   const [isStopping, setIsStopping] = useState(false);
   const [result, setResult] = useState<PronunciationResult | null>(null);
   const [heard, setHeard] = useState("");
+  // Words understood so far, shown live while listening
+  const [liveText, setLiveText] = useState("");
   const [error, setError] = useState("");
   const stopRef = useRef<(() => void) | null>(null);
 
@@ -47,7 +49,9 @@ export function PhraseCard({ phrase, languageCode, canPractice }: PhraseCardProp
     setIsListening(true);
     setResult(null);
     setError("");
+    setLiveText("");
     stopRef.current = listenOnce(locale, {
+      onPartial: setLiveText,
       onResult: (transcript) => {
         setHeard(transcript);
         setResult(comparePronunciation(phrase.text, transcript));
@@ -97,6 +101,12 @@ export function PhraseCard({ phrase, languageCode, canPractice }: PhraseCardProp
           {isStopping
             ? "Checking…"
             : "Listening… say the sentence, tap again to stop."}
+        </Text>
+      )}
+
+      {isListening && liveText !== "" && (
+        <Text className="body-md text-text-primary mt-1" testID="live-transcript">
+          I hear: “{liveText}”
         </Text>
       )}
 
