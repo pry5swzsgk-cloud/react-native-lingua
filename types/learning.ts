@@ -60,7 +60,13 @@ export type ThemeId =
   | "family"
   | "routine"
   | "past"
-  | "plans";
+  | "plans"
+  | "shopping"
+  | "weather"
+  | "home"
+  | "travel"
+  | "health"
+  | "work";
 
 export interface Theme {
   id: ThemeId;

@@ -194,6 +194,14 @@ export function buildExercises(
   }
 
   // 2. Fill them with content
+  // The sentence to write down: a real sentence (several words) if there is
+  // one. Speaking exercises use the other sentences first.
+  const longSentences = phrases.filter((p) => p.text.trim().includes(" "));
+  const sentence = (longSentences.length > 0 ? longSentences : phrases)[0];
+  const speakPhrases = [
+    ...phrases.filter((p) => p !== sentence),
+    ...(sentence ? [sentence] : []),
+  ];
   let nextWord = 0;
   let nextPhrase = 0;
   let hasSentenceDictation = false;
@@ -210,17 +218,16 @@ export function buildExercises(
       case "write":
         return buildWrite(id(kind, index), takeWord(), inEnglish);
       case "speak":
-        return buildSpeak(id(kind, index), phrases[nextPhrase++]);
+        return buildSpeak(id(kind, index), speakPhrases[nextPhrase++]);
       case "dictation":
         // The first dictation is a whole sentence (a word for Japanese)
-        if (!hasSentenceDictation && !inEnglish && phrases.length > 0) {
+        if (!hasSentenceDictation && !inEnglish && sentence) {
           hasSentenceDictation = true;
-          const sentence = phrases[phrases.length - 1].text;
           return {
             type: "dictation",
             id: id(kind, index),
-            audio: sentence,
-            answer: sentence,
+            audio: sentence.text,
+            answer: sentence.text,
             answerInEnglish: false,
           };
         }
