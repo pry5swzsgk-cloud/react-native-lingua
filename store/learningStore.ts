@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
@@ -35,3 +36,23 @@ export const useLearningStore = create<LearningState>()(
     }
   )
 );
+
+// True once the saved progress has been read from the device. Screens that
+// animate changes in progress wait for this, so loading does not look like
+// the learner just finished everything at once.
+export function useLearningHydrated(): boolean {
+  const [hydrated, setHydrated] = useState(
+    useLearningStore.persist.hasHydrated(),
+  );
+
+  useEffect(() => {
+    if (hydrated) return;
+    if (useLearningStore.persist.hasHydrated()) {
+      setHydrated(true);
+      return;
+    }
+    return useLearningStore.persist.onFinishHydration(() => setHydrated(true));
+  }, [hydrated]);
+
+  return hydrated;
+}
