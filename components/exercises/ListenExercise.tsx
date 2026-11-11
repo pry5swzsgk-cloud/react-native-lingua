@@ -4,6 +4,7 @@ import { Text, TouchableOpacity, View } from "react-native";
 import { ExerciseFooter } from "@/components/exercises/ExerciseFooter";
 import { SpeakButton } from "@/components/SpeakButton";
 import { ExerciseResult, ListenExerciseData } from "@/lib/exercises";
+import { playSound } from "@/lib/sounds";
 import { stopSpeaking } from "@/lib/speech";
 import { LanguageCode } from "@/types/learning";
 
@@ -81,6 +82,7 @@ export function ListenExercise({
         canCheck={selected !== null}
         onCheck={() => {
           stopSpeaking();
+          playSound(isCorrect ? "correct" : "wrong");
           setIsChecked(true);
         }}
         onContinue={() => onDone(isCorrect ? "correct" : "wrong")}

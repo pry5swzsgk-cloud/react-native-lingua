@@ -11,6 +11,7 @@ import {
   ExerciseResult,
   WriteExerciseData,
 } from "@/lib/exercises";
+import { playSound } from "@/lib/sounds";
 import { stopSpeaking } from "@/lib/speech";
 import { LanguageCode } from "@/types/learning";
 
@@ -34,7 +35,14 @@ export function TypeExercise({ exercise, languageCode, onDone }: TypeExercisePro
   function handleCheck() {
     if (!typed.trim() || status !== null) return;
     stopSpeaking();
-    setStatus(checkTypedAnswer(exercise.answer, typed, exercise.answerInEnglish));
+    const result = checkTypedAnswer(
+      exercise.answer,
+      typed,
+      exercise.answerInEnglish,
+    );
+    // "almost" (accent or typo) still counts, so it gets the happy sound
+    playSound(result === "wrong" ? "wrong" : "correct");
+    setStatus(result);
   }
 
   return (

@@ -3,6 +3,7 @@ import { Text, TouchableOpacity, View } from "react-native";
 
 import { ExerciseFooter } from "@/components/exercises/ExerciseFooter";
 import { ExerciseResult, MatchExerciseData } from "@/lib/exercises";
+import { playSound } from "@/lib/sounds";
 
 interface MatchExerciseProps {
   exercise: MatchExerciseData;
@@ -29,9 +30,12 @@ export function MatchExercise({ exercise, onDone }: MatchExerciseProps) {
     const pair = exercise.pairs.find((p) => p.word === selectedWord);
 
     if (pair?.translation === translation) {
+      const isLastPair = matchedWords.length + 1 === exercise.pairs.length;
+      playSound(isLastPair ? "correct" : "tick");
       setMatchedWords([...matchedWords, selectedWord]);
       setWrongPair(null);
     } else {
+      playSound("wrong");
       setWrongPair({ word: selectedWord, translation });
       // Clear the red flash after a moment
       setTimeout(() => setWrongPair(null), 700);

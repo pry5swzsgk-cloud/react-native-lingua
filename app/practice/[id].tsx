@@ -22,6 +22,7 @@ import { colors } from "@/constants/theme";
 import { LESSONS } from "@/data/lessons";
 import { buildExercises, Exercise, ExerciseResult } from "@/lib/exercises";
 import { getLessonAfter, getUnitOfLesson } from "@/lib/progress";
+import { playSound } from "@/lib/sounds";
 import { stopSpeaking } from "@/lib/speech";
 import { isSpeechRecognitionSupported } from "@/lib/speechRecognition";
 import { useLearningStore } from "@/store/learningStore";
@@ -96,6 +97,7 @@ export default function PracticeScreen() {
     }
 
     // Everything is solved: the lesson counts as complete now
+    playSound("complete");
     const isRepeat = completedLessonIds.includes(lesson.id);
     if (!isRepeat) {
       completeLesson(lesson.id);
