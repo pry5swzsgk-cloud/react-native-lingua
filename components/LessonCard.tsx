@@ -43,7 +43,8 @@ export function LessonCard({
         </Text>
 
         <Text className="caption mt-0.5">
-          {lesson.activities.length} activities · {lesson.xpReward} XP
+          {lesson.vocabulary.length} words · {lesson.phrases.length} phrases ·{" "}
+          {lesson.xpReward} XP
         </Text>
       </View>
 

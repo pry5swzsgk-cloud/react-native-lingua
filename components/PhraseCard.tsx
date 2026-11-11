@@ -1,11 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 
+import { PronunciationFeedback } from "@/components/PronunciationFeedback";
 import { SpeakButton } from "@/components/SpeakButton";
 import { colors } from "@/constants/theme";
 import { LANGUAGES } from "@/data/languages";
 import { comparePronunciation, PronunciationResult } from "@/lib/pronunciation";
+import { stopSpeaking } from "@/lib/speech";
 import { listenOnce } from "@/lib/speechRecognition";
 import { LanguageCode, Phrase } from "@/types/learning";
 
@@ -20,6 +22,7 @@ interface PhraseCardProps {
 // checks the learner's pronunciation word by word.
 export function PhraseCard({ phrase, languageCode, canPractice }: PhraseCardProps) {
   const [isListening, setIsListening] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
   const [result, setResult] = useState<PronunciationResult | null>(null);
   const [heard, setHeard] = useState("");
   const [error, setError] = useState("");
@@ -28,8 +31,10 @@ export function PhraseCard({ phrase, languageCode, canPractice }: PhraseCardProp
   // Stop the microphone when the card leaves the screen
   useEffect(() => () => stopRef.current?.(), []);
 
-  async function handleMicPress() {
+  function handleMicPress() {
+    // Tapping again while listening stops right away
     if (isListening) {
+      setIsStopping(true);
       stopRef.current?.();
       return;
     }
@@ -37,17 +42,22 @@ export function PhraseCard({ phrase, languageCode, canPractice }: PhraseCardProp
     const locale =
       LANGUAGES.find((l) => l.code === languageCode)?.speechLocale ?? "en-US";
 
+    // The microphone must not hear the voice reading the sentence
+    stopSpeaking();
     setIsListening(true);
     setResult(null);
     setError("");
-    stopRef.current = await listenOnce(locale, {
+    stopRef.current = listenOnce(locale, {
       onResult: (transcript) => {
         setHeard(transcript);
         setResult(comparePronunciation(phrase.text, transcript));
       },
       onError: setError,
-      onEnd: () => setIsListening(false),
-    });
+      onEnd: () => {
+        setIsListening(false);
+        setIsStopping(false);
+      },
+    }).stop;
   }
 
   return (
@@ -73,7 +83,7 @@ export function PhraseCard({ phrase, languageCode, canPractice }: PhraseCardProp
               testID="mic-button"
             >
               {isListening ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <Ionicons name="stop" size={18} color="#fff" />
               ) : (
                 <Ionicons name="mic" size={20} color={colors.primary.purple} />
               )}
@@ -84,7 +94,9 @@ export function PhraseCard({ phrase, languageCode, canPractice }: PhraseCardProp
 
       {isListening && (
         <Text className="body-sm text-lingua-purple mt-2">
-          Listening… say the sentence, tap again to stop.
+          {isStopping
+            ? "Checking…"
+            : "Listening… say the sentence, tap again to stop."}
         </Text>
       )}
 
@@ -94,22 +106,11 @@ export function PhraseCard({ phrase, languageCode, canPractice }: PhraseCardProp
 
       {result && !isListening && (
         <View className="mt-2 pt-2 border-t border-border" testID="speech-result">
-          <Text className="font-poppins-semibold text-sm">
-            {result.words.map((word, index) => (
-              <Text
-                key={`${word.text}-${index}`}
-                className={word.ok ? "text-success" : "text-error"}
-              >
-                {word.text}
-                {phrase.text.includes(" ") ? " " : ""}
-              </Text>
-            ))}
-          </Text>
-          <Text className="body-sm text-text-secondary mt-1">
-            {result.passed
-              ? `Great job! ${Math.round(result.score * 100)}% matched.`
-              : `${Math.round(result.score * 100)}% matched. I heard: “${heard}”. Try again!`}
-          </Text>
+          <PronunciationFeedback
+            sentence={phrase.text}
+            result={result}
+            heard={heard}
+          />
         </View>
       )}
     </View>
