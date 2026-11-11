@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Text, TextInput, View } from "react-native";
 
 import { ExerciseFooter } from "@/components/exercises/ExerciseFooter";
-import { SpeakButton } from "@/components/SpeakButton";
+import { AudioPrompt } from "@/components/exercises/AudioPrompt";
 import { colors } from "@/constants/theme";
 import { LANGUAGES } from "@/data/languages";
 import { AnswerStatus, checkTypedAnswer } from "@/lib/answers";
@@ -74,18 +74,12 @@ export function TypeExercise({ exercise, languageCode, onDone }: TypeExercisePro
                 : "Write what you hear"}
             </Text>
             <Text className="body-sm text-text-secondary mb-5">
-              Tap the speaker as often as you like, then type{" "}
+              Tap the speaker as often as you like (0.5× is slow), then type{" "}
               {exercise.answerInEnglish
                 ? "what it means in English."
                 : `it in ${languageName}.`}
             </Text>
-            <View className="items-center mb-6">
-              <SpeakButton
-                text={exercise.audio}
-                languageCode={languageCode}
-                size="large"
-              />
-            </View>
+            <AudioPrompt text={exercise.audio} languageCode={languageCode} />
           </>
         )}
 

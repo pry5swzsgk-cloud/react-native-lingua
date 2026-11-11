@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
 import { ExerciseFooter } from "@/components/exercises/ExerciseFooter";
-import { SpeakButton } from "@/components/SpeakButton";
+import { AudioPrompt } from "@/components/exercises/AudioPrompt";
 import { ExerciseResult, ListenExerciseData } from "@/lib/exercises";
 import { playSound } from "@/lib/sounds";
 import { stopSpeaking } from "@/lib/speech";
@@ -42,16 +42,10 @@ export function ListenExercise({
       <View className="flex-1 px-5">
         <Text className="h3 mb-1">What do you hear?</Text>
         <Text className="body-sm text-text-secondary mb-5">
-          Tap the speaker and choose the meaning.
+          Tap the speaker and choose the meaning. 0.5× plays it slowly.
         </Text>
 
-        <View className="items-center mb-6">
-          <SpeakButton
-            text={exercise.audio}
-            languageCode={languageCode}
-            size="large"
-          />
-        </View>
+        <AudioPrompt text={exercise.audio} languageCode={languageCode} />
 
         <View className="gap-3">
           {exercise.options.map((option) => (
