@@ -14,7 +14,7 @@ import Animated, {
 import { LINE_DURATION } from "@/components/map/MapLine";
 import { images } from "@/constants/images";
 import { colors } from "@/constants/theme";
-import { NODE_SIZE } from "@/lib/mapLayout";
+import { LABEL_WIDTH, NODE_SIZE } from "@/lib/mapLayout";
 import { Lesson } from "@/types/learning";
 
 export type MapNodeStatus = "done" | "current" | "open";
@@ -30,7 +30,7 @@ interface MapNodeProps {
   onPress: () => void;
 }
 
-const NODE_WIDTH = 168; // touch area: circle plus the label below it
+const NODE_WIDTH = LABEL_WIDTH;
 
 // One level on the map. Every level can be tapped at any time.
 //   done    - colored ring with a check mark
