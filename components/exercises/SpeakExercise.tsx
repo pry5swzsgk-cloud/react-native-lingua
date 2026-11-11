@@ -9,6 +9,7 @@ import { colors } from "@/constants/theme";
 import { LANGUAGES } from "@/data/languages";
 import { ExerciseResult, SpeakExerciseData } from "@/lib/exercises";
 import { comparePronunciation, PronunciationResult } from "@/lib/pronunciation";
+import { playSound } from "@/lib/sounds";
 import { stopSpeaking } from "@/lib/speech";
 import { listenOnce } from "@/lib/speechRecognition";
 import { LanguageCode } from "@/types/learning";
@@ -54,8 +55,10 @@ export function SpeakExercise({
     setError("");
     stopRef.current = listenOnce(locale, {
       onResult: (transcript) => {
+        const comparison = comparePronunciation(exercise.text, transcript);
+        playSound(comparison.passed ? "correct" : "wrong");
         setHeard(transcript);
-        setResult(comparePronunciation(exercise.text, transcript));
+        setResult(comparison);
       },
       onError: setError,
       onEnd: () => setIsListening(false),

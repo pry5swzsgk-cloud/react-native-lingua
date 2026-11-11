@@ -58,7 +58,7 @@ Use the following stack:
 - NativeWind / Tailwind CSS
 - Zustand
 - AsyncStorage
-- expo-speech (text-to-speech) and expo-speech-recognition (pronunciation check), both using the engines built into the device or browser
+- expo-speech (text-to-speech), expo-speech-recognition (pronunciation check) and expo-audio (feedback sounds), all running on the device or in the browser
 - Other on-device Expo SDK modules when approved
 
 Not used (removed on purpose): Clerk, Stream, Vision Agents, OpenAI, PostHog,

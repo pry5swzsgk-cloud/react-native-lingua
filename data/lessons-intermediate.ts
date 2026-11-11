@@ -5,6 +5,7 @@ export const INTERMEDIATE_LESSONS: Lesson[] = [
   {
     id: "es-b1-lesson-1",
     unitId: "es-unit-3",
+    theme: "past",
     title: "Talking About the Past",
     description: "Say what you did yesterday and last week",
     icon: "📅",
@@ -59,6 +60,7 @@ export const INTERMEDIATE_LESSONS: Lesson[] = [
   {
     id: "es-b1-lesson-2",
     unitId: "es-unit-3",
+    theme: "plans",
     title: "Plans & Opinions",
     description: "Talk about the future and say what you think",
     icon: "💭",
@@ -113,6 +115,7 @@ export const INTERMEDIATE_LESSONS: Lesson[] = [
   {
     id: "fr-b1-lesson-1",
     unitId: "fr-unit-3",
+    theme: "past",
     title: "Talking About the Past",
     description: "Say what you did yesterday and last week",
     icon: "📅",
@@ -167,6 +170,7 @@ export const INTERMEDIATE_LESSONS: Lesson[] = [
   {
     id: "fr-b1-lesson-2",
     unitId: "fr-unit-3",
+    theme: "plans",
     title: "Plans & Opinions",
     description: "Talk about the future and say what you think",
     icon: "💭",
@@ -221,6 +225,7 @@ export const INTERMEDIATE_LESSONS: Lesson[] = [
   {
     id: "ja-b1-lesson-1",
     unitId: "ja-unit-3",
+    theme: "past",
     title: "過去 — Talking About the Past",
     description: "Say what you did yesterday and last week",
     icon: "📅",
@@ -275,6 +280,7 @@ export const INTERMEDIATE_LESSONS: Lesson[] = [
   {
     id: "ja-b1-lesson-2",
     unitId: "ja-unit-3",
+    theme: "plans",
     title: "予定と意見 — Plans & Opinions",
     description: "Talk about the future and say what you think",
     icon: "💭",
@@ -329,6 +335,7 @@ export const INTERMEDIATE_LESSONS: Lesson[] = [
   {
     id: "de-b1-lesson-1",
     unitId: "de-unit-3",
+    theme: "past",
     title: "Über die Vergangenheit",
     description: "Say what you did yesterday and last week",
     icon: "📅",
@@ -383,6 +390,7 @@ export const INTERMEDIATE_LESSONS: Lesson[] = [
   {
     id: "de-b1-lesson-2",
     unitId: "de-unit-3",
+    theme: "plans",
     title: "Pläne & Meinungen",
     description: "Talk about the future and say what you think",
     icon: "💭",

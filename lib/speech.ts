@@ -9,6 +9,10 @@ import { LanguageCode } from "@/types/learning";
 let current: { id: number; onFinished: () => void } | null = null;
 let lastId = 0;
 
+// Speaking speeds: 1 is the voice's own pace
+export const NORMAL_RATE = 0.9; // slightly slower so learners can follow
+export const SLOW_RATE = 0.5; // half speed, for listening exercises
+
 // Reads text aloud with the device's built-in voice for that language.
 // Free and on-device: no server, no API key.
 // onFinished runs once, when the reading is done or was stopped.
@@ -16,6 +20,7 @@ export function speak(
   text: string,
   languageCode: LanguageCode | null,
   onFinished: () => void,
+  rate: number = NORMAL_RATE,
 ) {
   stopSpeaking(); // cut off anything still playing
 
@@ -33,7 +38,7 @@ export function speak(
   const language = LANGUAGES.find((l) => l.code === languageCode);
   Speech.speak(text, {
     language: language?.speechLocale,
-    rate: 0.9, // slightly slower so learners can follow
+    rate,
     onDone: finish,
     onStopped: finish,
     onError: finish,
