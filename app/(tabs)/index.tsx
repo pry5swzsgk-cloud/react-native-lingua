@@ -117,7 +117,7 @@ export default function HomeScreen() {
 
           <View className="flex-row items-center gap-[14px]">
             <View className="flex-row items-center gap-1">
-              <Image source={images.streakFire} style={styles.streakIcon} />
+              <Image source={images.flame} style={styles.streakIcon} />
               <Text
                 className="font-poppins-semibold text-[15px] text-streak"
                 testID="home-streak"
@@ -160,7 +160,7 @@ export default function HomeScreen() {
             </View>
           </View>
           <Image
-            source={images.treasure}
+            source={images.chestDailyClosed}
             style={styles.treasure}
             resizeMode="contain"
           />
