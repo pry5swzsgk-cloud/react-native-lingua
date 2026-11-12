@@ -57,7 +57,7 @@ export const DIALOGS: DialogItem[] = [
     questionTranslation: "Do you have siblings?",
     reply: "Sí, tengo una hermana.",
     replyTranslation: "Yes, I have a sister.",
-    keywords: ["tengo", "hermano", "hermana"],
+    keywords: ["tengo", "una hermana", "un hermano", "hijo unico"],
     wrongReplies: ["Hoy voy al mercado.", "Me gusta mucho el chocolate."],
   },
   {
@@ -68,7 +68,7 @@ export const DIALOGS: DialogItem[] = [
     questionTranslation: "What is the weather like today?",
     reply: "Hoy hace mucho sol.",
     replyTranslation: "It is very sunny today.",
-    keywords: ["hace", "sol", "llueve", "frio"],
+    keywords: ["mucho sol", "hay sol", "llueve", "frio", "calor"],
     wrongReplies: [
       "Mi padre trabaja en el hospital.",
       "Quiero un café con leche.",
@@ -96,7 +96,7 @@ export const DIALOGS: DialogItem[] = [
     questionTranslation: "What do you like to eat?",
     reply: "Me gusta la pizza.",
     replyTranslation: "I like pizza.",
-    keywords: ["gusta", "encanta", "como"],
+    keywords: ["me gusta la", "pizza", "pasta", "fruta", "prefiero"],
     wrongReplies: [
       "Vivo en una ciudad pequeña.",
       "Mi hermana tiene un gato negro.",
@@ -136,9 +136,9 @@ export const DIALOGS: DialogItem[] = [
     level: "A2",
     question: "¿Cuál es tu comida favorita?",
     questionTranslation: "What is your favorite food?",
-    reply: "Mi comida favorita es la paella.",
-    replyTranslation: "My favorite food is paella.",
-    keywords: ["favorita", "me gusta", "me encanta"],
+    reply: "Me encanta la paella.",
+    replyTranslation: "I love paella.",
+    keywords: ["me encanta", "me gusta", "paella", "prefiero"],
     wrongReplies: [
       "Mañana voy a visitar a mis abuelos.",
       "El tren sale de la estación muy temprano.",
@@ -166,7 +166,7 @@ export const DIALOGS: DialogItem[] = [
     questionTranslation: "What clothes are you wearing today?",
     reply: "Hoy llevo una camiseta azul y pantalones.",
     replyTranslation: "Today I am wearing a blue T-shirt and trousers.",
-    keywords: ["llevo", "camiseta", "pantalon", "ropa"],
+    keywords: ["llevo", "camiseta", "pantalon", "vestido"],
     wrongReplies: [
       "Mi hermano estudia medicina en la universidad.",
       "Ayer comimos pescado en un restaurante.",
@@ -194,7 +194,7 @@ export const DIALOGS: DialogItem[] = [
     questionTranslation: "What are you going to do tomorrow?",
     reply: "Mañana voy a visitar a mis abuelos.",
     replyTranslation: "Tomorrow I am going to visit my grandparents.",
-    keywords: ["voy a", "manana", "visitar"],
+    keywords: ["voy a", "visitar", "quiero", "pienso"],
     wrongReplies: [
       "Ayer fui al mercado con mi madre.",
       "Mi comida favorita es la pasta.",
@@ -208,7 +208,7 @@ export const DIALOGS: DialogItem[] = [
     questionTranslation: "What is your house like?",
     reply: "Mi casa es pequeña pero muy cómoda.",
     replyTranslation: "My house is small but very comfortable.",
-    keywords: ["casa", "pequena", "grande", "cocina"],
+    keywords: ["pequena", "grande", "comoda", "cocina", "salon"],
     wrongReplies: [
       "Ayer comí pescado con mis amigos.",
       "Normalmente trabajo en una oficina del centro.",
@@ -250,7 +250,7 @@ export const DIALOGS: DialogItem[] = [
     questionTranslation: "How was your last vacation?",
     reply: "Fueron geniales, visitamos la costa y descansamos mucho.",
     replyTranslation: "It was great, we visited the coast and rested a lot.",
-    keywords: ["fueron", "visit", "viaje", "genial"],
+    keywords: ["genial", "visitamos", "descansamos", "viaje"],
     wrongReplies: [
       "Normalmente me levanto temprano para correr.",
       "Mi vecino tiene un perro muy grande.",
@@ -278,7 +278,7 @@ export const DIALOGS: DialogItem[] = [
     questionTranslation: "How do you imagine your future?",
     reply: "Me imagino viviendo en una ciudad tranquila.",
     replyTranslation: "I imagine myself living in a quiet city.",
-    keywords: ["imagino", "futuro", "quiero", "espero"],
+    keywords: ["imagino", "quiero", "espero", "viviendo"],
     wrongReplies: [
       "Ayer cené con mis padres en casa.",
       "La película empieza a la hora de siempre.",
@@ -292,7 +292,7 @@ export const DIALOGS: DialogItem[] = [
     questionTranslation: "What do you think about public transport?",
     reply: "Creo que es útil, aunque a veces llega tarde.",
     replyTranslation: "I think it is useful, although it is sometimes late.",
-    keywords: ["creo", "opino", "pienso", "transporte"],
+    keywords: ["creo", "opino", "pienso", "util"],
     wrongReplies: [
       "Mi hermano me regaló un libro interesante.",
       "Anoche cocinamos una sopa de verduras.",
@@ -306,7 +306,7 @@ export const DIALOGS: DialogItem[] = [
     questionTranslation: "What would you do if you won the lottery?",
     reply: "Compraría una casa y viajaría por el mundo.",
     replyTranslation: "I would buy a house and travel the world.",
-    keywords: ["compraria", "viajaria", "haria", "ayudaria"],
+    keywords: ["compraria", "viajaria", "ayudaria", "dejaria"],
     wrongReplies: [
       "Mañana tengo una reunión con mi jefe.",
       "Mi abuela cocina muy bien los domingos.",
@@ -334,7 +334,7 @@ export const DIALOGS: DialogItem[] = [
     questionTranslation: "Do you think social media is good for society?",
     reply: "Creo que sí, pero hay que usarlas con cuidado.",
     replyTranslation: "I think so, but you have to use it carefully.",
-    keywords: ["creo", "pienso", "opino", "redes"],
+    keywords: ["creo", "pienso", "opino", "cuidado"],
     wrongReplies: [
       "Ayer compré unas botas para el invierno.",
       "La reunión de mañana empieza muy temprano.",
@@ -376,7 +376,7 @@ export const DIALOGS: DialogItem[] = [
     questionTranslation: "What is the biggest advantage of traveling?",
     reply: "Conoces otras culturas y aprendes muchísimo.",
     replyTranslation: "You get to know other cultures and learn a lot.",
-    keywords: ["cultura", "aprend", "conoc", "ventaja"],
+    keywords: ["cultura", "aprend", "conoc", "experiencia"],
     wrongReplies: [
       "Anoche preparé una cena para mis vecinos.",
       "Mi coche necesita una revisión urgente.",
@@ -391,7 +391,7 @@ export const DIALOGS: DialogItem[] = [
     reply: "Cambiaría el tráfico, porque hay demasiados coches.",
     replyTranslation:
       "I would change the traffic, because there are too many cars.",
-    keywords: ["cambiaria", "mejoraria", "porque", "trafico"],
+    keywords: ["trafico", "mejoraria", "porque", "demasiados"],
     wrongReplies: [
       "Ayer vimos una película muy divertida.",
       "Mi tía cocina un pastel delicioso.",
@@ -406,7 +406,7 @@ export const DIALOGS: DialogItem[] = [
       "Do you agree with learning languages from a young age?",
     reply: "Sí, porque los niños aprenden más rápido.",
     replyTranslation: "Yes, because children learn faster.",
-    keywords: ["de acuerdo", "porque", "aprenden", "ninos"],
+    keywords: ["porque", "aprenden", "ninos", "rapido"],
     wrongReplies: [
       "El domingo fuimos a comer a casa de mi tío.",
       "Mi vecina vende flores en el mercado.",
@@ -421,7 +421,7 @@ export const DIALOGS: DialogItem[] = [
     reply: "Nos facilita muchas tareas, pero nos distrae bastante.",
     replyTranslation:
       "It makes many tasks easier, but it distracts us quite a bit.",
-    keywords: ["facilita", "tecnologia", "distrae", "ayuda"],
+    keywords: ["facilita", "distrae", "ayuda", "tareas"],
     wrongReplies: [
       "Este verano quiero visitar a mi familia.",
       "El autobús sale cada media hora.",
@@ -436,7 +436,7 @@ export const DIALOGS: DialogItem[] = [
     reply: "Me parece poco sana, aunque es muy práctica.",
     replyTranslation:
       "I think it is not very healthy, although it is very practical.",
-    keywords: ["me parece", "sana", "rapida", "pienso"],
+    keywords: ["me parece", "sana", "practica", "prefiero"],
     wrongReplies: [
       "Mi hermano juega al baloncesto cada semana.",
       "Ayer nos perdimos por el centro.",

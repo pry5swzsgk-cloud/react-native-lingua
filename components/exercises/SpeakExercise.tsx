@@ -7,25 +7,13 @@ import { PronunciationFeedback } from "@/components/PronunciationFeedback";
 import { SpeakButton } from "@/components/SpeakButton";
 import { colors } from "@/constants/theme";
 import { LANGUAGES } from "@/data/languages";
+import { containsKeyword } from "@/lib/answers";
 import { ExerciseResult, SpeakExerciseData } from "@/lib/exercises";
 import { comparePronunciation, PronunciationResult } from "@/lib/pronunciation";
 import { playSound } from "@/lib/sounds";
 import { stopSpeaking } from "@/lib/speech";
 import { listenOnce } from "@/lib/speechRecognition";
-import { normalizeText, stripAccents } from "@/lib/teacherText";
 import { LanguageCode } from "@/types/learning";
-
-// Lowercase, no accents, no punctuation
-const plain = (text: string) => stripAccents(normalizeText(text));
-
-// Right when the heard text contains a keyword (keywords may be word stems)
-function hasKeyword(heard: string, keywords: string[]): boolean {
-  const text = plain(heard);
-  return keywords.some((keyword) => {
-    const key = plain(keyword);
-    return key !== "" && text.includes(key);
-  });
-}
 
 interface SpeakExerciseProps {
   exercise: SpeakExerciseData;
@@ -62,7 +50,7 @@ export function SpeakExercise({
 
   // For a question the score is only "has a keyword" or not
   function answerResult(transcript: string): PronunciationResult {
-    const passed = hasKeyword(transcript, exercise.keywords ?? []);
+    const passed = containsKeyword(transcript, exercise.keywords ?? []);
     return { words: [], score: passed ? 1 : 0, passed };
   }
 
@@ -112,7 +100,7 @@ export function SpeakExercise({
           {question
             ? "Tap the mic and answer in your own words."
             : exercise.hideText
-            ? "Tap the mic and say it in your own words."
+            ? `Tap the mic and say the sentence in ${languageName}.`
             : "Listen first if you like, then tap the mic and speak."}
         </Text>
 
@@ -193,9 +181,13 @@ export function SpeakExercise({
             <Text className="body-sm text-text-secondary">
               I heard: “{heard}”
             </Text>
-            {result.passed && (
+            {result.passed ? (
               <Text className="font-poppins-semibold text-sm text-success mt-1">
                 Great answer!
+              </Text>
+            ) : (
+              <Text className="body-sm text-text-secondary mt-1" testID="speak-hint">
+                Not quite. Try to answer the question.
               </Text>
             )}
             <View className="bg-surface rounded-2xl px-4 py-3 flex-row items-center mt-3">
