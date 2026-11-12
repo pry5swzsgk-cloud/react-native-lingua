@@ -36,6 +36,7 @@ export default function RootLayout() {
       <Stack.Screen name="practice/[id]" />
       <Stack.Screen name="training/[mode]" />
       <Stack.Screen name="scene/[id]" />
+      <Stack.Screen name="call" />
     </Stack>
   );
 }
