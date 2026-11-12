@@ -6,7 +6,8 @@ import { LanguageCode } from "@/types/learning";
 
 interface LanguageState {
   selectedLanguage: LanguageCode | null;
-  // Where the learner starts per language: 1 = A1, 2 = A2, 3 = B1
+  // Where the learner starts per language: the order of the first unit of their
+  // level (Spanish: 1 = A1, 2 = A2, 3 = B1, 6 = B2)
   startUnitOrders: Partial<Record<LanguageCode, number>>;
   setSelectedLanguage: (code: LanguageCode) => void;
   setStartUnitOrder: (code: LanguageCode, order: number) => void;

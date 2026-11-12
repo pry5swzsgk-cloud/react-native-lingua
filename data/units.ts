@@ -1,6 +1,7 @@
 import { Unit } from '@/types/learning';
 
-// Every language has three units that get harder: A1 -> A2 -> B1.
+// Units get harder from top to bottom: A1 -> A2 -> B1 -> B2. Every language
+// has A1, A2 and B1; Spanish goes on with more B1 units and two B2 units.
 export const UNITS: Unit[] = [
   // ─── Spanish ───────────────────────────────────────────────────────────────
   {
@@ -29,6 +30,43 @@ export const UNITS: Unit[] = [
     description: 'Tell stories, make plans and share opinions',
     order: 3,
     lessonIds: ['es-b1-lesson-1', 'es-b1-lesson-2', 'es-b1-lesson-3', 'es-b1-lesson-4', 'es-b1-lesson-5'],
+  },
+
+  {
+    id: 'es-unit-4',
+    languageCode: 'es',
+    level: 'B1',
+    title: 'Leisure & Culture',
+    description: 'Talk about hobbies, music, sport and parties',
+    order: 4,
+    lessonIds: ['es-b1-lesson-6', 'es-b1-lesson-7', 'es-b1-lesson-8', 'es-b1-lesson-9', 'es-b1-lesson-10'],
+  },
+  {
+    id: 'es-unit-5',
+    languageCode: 'es',
+    level: 'B1',
+    title: 'City Life',
+    description: 'Find your way and get things done in town',
+    order: 5,
+    lessonIds: ['es-b1-lesson-11', 'es-b1-lesson-12', 'es-b1-lesson-13', 'es-b1-lesson-14', 'es-b1-lesson-15'],
+  },
+  {
+    id: 'es-unit-6',
+    languageCode: 'es',
+    level: 'B2',
+    title: 'Ideas & Society',
+    description: 'Share your views on school, nature, money and relationships',
+    order: 6,
+    lessonIds: ['es-b2-lesson-1', 'es-b2-lesson-2', 'es-b2-lesson-3', 'es-b2-lesson-4', 'es-b2-lesson-5'],
+  },
+  {
+    id: 'es-unit-7',
+    languageCode: 'es',
+    level: 'B2',
+    title: 'Career & Culture',
+    description: 'Go further with work, art, history and big goals',
+    order: 7,
+    lessonIds: ['es-b2-lesson-6', 'es-b2-lesson-7', 'es-b2-lesson-8', 'es-b2-lesson-9', 'es-b2-lesson-10'],
   },
 
   // ─── French ────────────────────────────────────────────────────────────────

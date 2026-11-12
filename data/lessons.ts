@@ -1,6 +1,7 @@
 import { ELEMENTARY_LESSONS } from '@/data/lessons-elementary';
 import { INTERMEDIATE_LESSONS } from '@/data/lessons-intermediate';
 import { SPANISH_EXTRA_LESSONS } from '@/data/lessons-spanish';
+import { SPANISH_MORE_LESSONS } from '@/data/lessons-spanish-more';
 import { Lesson } from '@/types/learning';
 
 export const LESSONS: Lesson[] = [
@@ -1037,4 +1038,5 @@ export const LESSONS: Lesson[] = [
   ...ELEMENTARY_LESSONS,
   ...INTERMEDIATE_LESSONS,
   ...SPANISH_EXTRA_LESSONS,
+  ...SPANISH_MORE_LESSONS,
 ];

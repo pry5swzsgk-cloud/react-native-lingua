@@ -66,7 +66,21 @@ export type ThemeId =
   | "home"
   | "travel"
   | "health"
-  | "work";
+  | "work"
+  | "hobbies"
+  | "music"
+  | "sports"
+  | "party"
+  | "city"
+  | "transport"
+  | "technology"
+  | "news"
+  | "school"
+  | "nature"
+  | "money"
+  | "art"
+  | "history"
+  | "goals";
 
 export interface Theme {
   id: ThemeId;
@@ -92,8 +106,9 @@ export interface Lesson {
   aiTeacherPrompt?: AITeacherPrompt;
 }
 
-// CEFR level of a unit: A1 = beginner, A2 = elementary, B1 = intermediate
-export type UnitLevel = "A1" | "A2" | "B1";
+// CEFR level of a unit: A1 = beginner, A2 = elementary, B1 = intermediate,
+// B2 = upper intermediate
+export type UnitLevel = "A1" | "A2" | "B1" | "B2";
 
 export interface Unit {
   id: string;
