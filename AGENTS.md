@@ -38,6 +38,10 @@ The app is completely free. These rules are not negotiable:
 4. No heart/lives system that blocks learning.
 5. Progress is stored locally on the device (Zustand + AsyncStorage).
 6. The app must work offline. Do not load images, fonts or content from the internet.
+   The one exception is the optional language model of Smart Dax (web version
+   only): when the learner taps "Download", it is fetched once from
+   `huggingface.co` and `raw.githubusercontent.com`, then kept on the device.
+   Without it everything works, and nothing else is ever loaded from the internet.
 7. No paid APIs, paid databases, paid servers or analytics/tracking services.
 8. No hidden costs or dependencies that require an API key to run the app.
 9. Prefer open-source libraries that run on the device.
@@ -61,6 +65,7 @@ Use the following stack:
 - Zustand
 - AsyncStorage
 - expo-speech (text-to-speech), expo-speech-recognition (pronunciation check) and expo-audio (feedback sounds), all running on the device or in the browser
+- @mlc-ai/web-llm (Smart Dax: a small language model that runs in the browser on WebGPU; web version only, loaded only when used)
 - Other on-device Expo SDK modules when approved
 
 Not used (removed on purpose): Clerk, Stream, Vision Agents, OpenAI, PostHog,

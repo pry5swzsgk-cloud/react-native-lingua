@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useRef, useState } from "react";
+import { ReactNode, useCallback, useRef, useState } from "react";
 import {
   Image,
   KeyboardAvoidingView,
@@ -19,16 +19,18 @@ import { VocabularyCard } from "@/components/teacher/VocabularyCard";
 import { images } from "@/constants/images";
 import { colors } from "@/constants/theme";
 import { LANGUAGES } from "@/data/languages";
-import { useTeacherChat } from "@/hooks/useTeacherChat";
+import { TeacherChatController, useTeacherChat } from "@/hooks/useTeacherChat";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { stopSpeaking } from "@/lib/speech";
-import { ThemeId } from "@/types/learning";
+import { LanguageCode, ThemeId } from "@/types/learning";
 import { TeacherContent } from "@/types/teacher";
 
 interface TeacherChatProps {
   content: TeacherContent;
   // The theme of the lesson the learner is on; Dax starts with a fitting topic
   preferredTheme: ThemeId | null;
+  // A card below the intro text, for example the way to Smart Dax
+  introExtra?: ReactNode;
 }
 
 const TIPS = [
@@ -38,24 +40,57 @@ const TIPS = [
   { emoji: "💡", text: "Stuck? “Help me answer” shows you how to begin." },
 ];
 
-// The conversation screen: Dax's messages, quick actions and the input bar
-// for typing or speaking.
-export function TeacherChat({ content, preferredTheme }: TeacherChatProps) {
+// Dax with rules: works offline, follows a script of topics and questions
+export function TeacherChat({
+  content,
+  preferredTheme,
+  introExtra,
+}: TeacherChatProps) {
   const chat = useTeacherChat(content, preferredTheme);
+
+  return (
+    <TeacherChatView
+      chat={chat}
+      languageCode={content.languageCode}
+      tips={TIPS}
+      note="Dax is a built-in practice partner that works offline. He follows simple rules and does not understand everything you say."
+      introExtra={introExtra}
+    />
+  );
+}
+
+interface TeacherChatViewProps {
+  chat: TeacherChatController;
+  languageCode: LanguageCode;
+  tips: { emoji: string; text: string }[];
+  note: string; // small print below the tips
+  introExtra?: ReactNode;
+}
+
+// The conversation screen, the same for both teachers: Dax's messages,
+// quick actions and the input bar for typing or speaking.
+export function TeacherChatView({
+  chat,
+  languageCode,
+  tips,
+  note,
+  introExtra,
+}: TeacherChatViewProps) {
   const voice = useVoiceInput();
   const [input, setInput] = useState("");
   // The next message is a German word to translate (also for the mic)
   const [germanHelp, setGermanHelp] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
-  const language = LANGUAGES.find((l) => l.code === content.languageCode);
+  const language = LANGUAGES.find((l) => l.code === languageCode);
   const languageName = language?.name ?? "Spanish";
 
   // Dax stops talking when the learner switches to another tab
   useFocusEffect(useCallback(() => () => stopSpeaking(), []));
 
   function handleSend(text: string) {
-    if (!text.trim()) return;
+    // Smart Dax answers one message at a time
+    if (!text.trim() || chat.isBusy) return;
     chat.send(text, germanHelp);
     setInput("");
     setGermanHelp(false);
@@ -127,7 +162,7 @@ export function TeacherChat({ content, preferredTheme }: TeacherChatProps) {
               </Text>
 
               <View className="w-full bg-white rounded-2xl border border-border px-4 py-3 mt-6 gap-3">
-                {TIPS.map((tip) => (
+                {tips.map((tip) => (
                   <View key={tip.emoji} className="flex-row gap-3">
                     <Text className="text-xl">{tip.emoji}</Text>
                     <Text className="flex-1 body-sm">{tip.text}</Text>
@@ -135,11 +170,9 @@ export function TeacherChat({ content, preferredTheme }: TeacherChatProps) {
                 ))}
               </View>
 
-              <Text className="caption text-center mt-4">
-                Dax is a built-in practice partner that works offline. He
-                follows simple rules and does not understand everything you
-                say.
-              </Text>
+              <Text className="caption text-center mt-4">{note}</Text>
+
+              {introExtra}
 
               <TouchableOpacity
                 className="w-full bg-lingua-purple rounded-2xl items-center py-4 mt-6"
@@ -172,7 +205,12 @@ export function TeacherChat({ content, preferredTheme }: TeacherChatProps) {
                           text={message.text}
                           translation={message.translation}
                           showTranslation={message.showTranslation}
-                          languageCode={content.languageCode}
+                          languageCode={languageCode}
+                          onTranslate={
+                            chat.translate ? () => chat.translate?.(id) : undefined
+                          }
+                          isTranslating={chat.translatingId === id}
+                          isWriting={chat.writingId === id}
                         />
                       );
                     case "help":
@@ -180,7 +218,7 @@ export function TeacherChat({ content, preferredTheme }: TeacherChatProps) {
                         <VocabularyCard
                           key={id}
                           words={message.words}
-                          languageCode={content.languageCode}
+                          languageCode={languageCode}
                         />
                       );
                     case "note":
@@ -323,9 +361,9 @@ export function TeacherChat({ content, preferredTheme }: TeacherChatProps) {
                   )}
 
                   <TouchableOpacity
-                    className={`w-11 h-11 rounded-full items-center justify-center ${input.trim() ? "bg-lingua-purple" : "bg-border"}`}
+                    className={`w-11 h-11 rounded-full items-center justify-center ${input.trim() && !chat.isBusy ? "bg-lingua-purple" : "bg-border"}`}
                     activeOpacity={0.7}
-                    disabled={!input.trim()}
+                    disabled={!input.trim() || chat.isBusy}
                     onPress={() => handleSend(input)}
                     accessibilityLabel="Send"
                     testID="teacher-send-button"
@@ -333,7 +371,11 @@ export function TeacherChat({ content, preferredTheme }: TeacherChatProps) {
                     <Ionicons
                       name="arrow-up"
                       size={20}
-                      color={input.trim() ? "#fff" : colors.neutral.textSecondary}
+                      color={
+                        input.trim() && !chat.isBusy
+                          ? "#fff"
+                          : colors.neutral.textSecondary
+                      }
                     />
                   </TouchableOpacity>
                 </View>

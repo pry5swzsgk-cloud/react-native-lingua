@@ -12,6 +12,12 @@ interface TeacherBubbleProps {
   // Open the German translation right away (used when the learner is stuck)
   showTranslation: boolean;
   languageCode: LanguageCode;
+  // Smart Dax makes the translation only when asked: tapping "Translate"
+  // calls this, and isTranslating shows that the model is working on it
+  onTranslate?: () => void;
+  isTranslating?: boolean;
+  // Dax is still writing this message: show dots, hide the buttons
+  isWriting?: boolean;
 }
 
 // Something Dax says in the chat. Below the text: listen, listen slowly,
@@ -21,9 +27,18 @@ export function TeacherBubble({
   translation,
   showTranslation,
   languageCode,
+  onTranslate,
+  isTranslating = false,
+  isWriting = false,
 }: TeacherBubbleProps) {
   const [isOpen, setIsOpen] = useState(showTranslation);
   const spoken = cleanForSpeech(text);
+
+  function handleTranslatePress() {
+    // The first time, the translation still has to be made
+    if (!isOpen && !translation && onTranslate) onTranslate();
+    setIsOpen(!isOpen);
+  }
 
   return (
     <View className="flex-row items-end gap-2 mb-3 pr-8" testID="chat-teacher">
@@ -36,28 +51,30 @@ export function TeacherBubble({
           className="font-poppins-medium text-[15px] text-text-primary leading-6"
           testID="chat-teacher-text"
         >
-          {text}
+          {text || "…"}
         </Text>
         {isOpen && (
           <Text className="body-sm text-text-secondary mt-1" testID="chat-translation">
-            {translation}
+            {translation || (isTranslating ? "Translating…" : "")}
           </Text>
         )}
 
-        <View className="flex-row items-center gap-2 mt-2">
-          <SpeakButton text={spoken} languageCode={languageCode} />
-          <SpeakButton text={spoken} languageCode={languageCode} slow />
-          <TouchableOpacity
-            className="h-10 px-3 rounded-full bg-surface items-center justify-center"
-            activeOpacity={0.7}
-            onPress={() => setIsOpen(!isOpen)}
-            testID="chat-translate-button"
-          >
-            <Text className="font-poppins-medium text-xs text-text-secondary">
-              {isOpen ? "Hide German" : "🇩🇪 Translate"}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        {!isWriting && (
+          <View className="flex-row items-center gap-2 mt-2">
+            <SpeakButton text={spoken} languageCode={languageCode} />
+            <SpeakButton text={spoken} languageCode={languageCode} slow />
+            <TouchableOpacity
+              className="h-10 px-3 rounded-full bg-surface items-center justify-center"
+              activeOpacity={0.7}
+              onPress={handleTranslatePress}
+              testID="chat-translate-button"
+            >
+              <Text className="font-poppins-medium text-xs text-text-secondary">
+                {isOpen ? "Hide German" : "🇩🇪 Translate"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </View>
   );
