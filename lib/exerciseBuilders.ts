@@ -4,6 +4,7 @@ import type {
   DictationExerciseData,
   Exercise,
   ExerciseKind,
+  FreeTextExerciseData,
   GapExerciseData,
   ListenExerciseData,
   MatchExerciseData,
@@ -239,6 +240,22 @@ function buildSpeakAnswer(ctx: BuildContext, id: string): SpeakExerciseData | nu
     translation: dialog.questionTranslation,
     question: dialog.question,
     keywords: dialog.keywords,
+  };
+}
+
+// The learner answers a question in their own words
+function buildFreeText(ctx: BuildContext, id: string): FreeTextExerciseData | null {
+  const dialog = ctx.takeDialog();
+  if (!dialog) return null;
+  return {
+    type: "freetext",
+    kind: "free-text",
+    id,
+    question: dialog.question,
+    questionTranslation: dialog.questionTranslation,
+    keywords: dialog.keywords,
+    sample: dialog.reply,
+    sampleTranslation: dialog.replyTranslation,
   };
 }
 
@@ -574,4 +591,5 @@ export const KINDS: KindSpec[] = [
   { kind: "tap-heard", group: "listening", easy: false, needsSpeech: false, build: buildTapHeard },
   { kind: "gap-choose", group: "choosing", easy: true, needsSpeech: false, build: buildGapChoose },
   { kind: "gap-type", group: "typing", easy: false, needsSpeech: false, build: buildGapType },
+  { kind: "free-text", group: "typing", easy: false, needsSpeech: false, build: buildFreeText },
 ];

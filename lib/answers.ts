@@ -90,3 +90,13 @@ export function checkTypedAnswer(
 
   return isClose ? "almost" : "wrong";
 }
+
+// True when the text contains one of the keywords. Capital letters, accents
+// and punctuation do not matter, and a keyword may be only part of a word.
+export function containsKeyword(text: string, keywords: string[]): boolean {
+  const plain = clean(text, false);
+  return keywords.some((keyword) => {
+    const key = clean(keyword, false);
+    return key !== "" && plain.includes(key);
+  });
+}

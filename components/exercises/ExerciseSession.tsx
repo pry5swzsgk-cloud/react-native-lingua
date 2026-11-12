@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ChoiceExercise } from "@/components/exercises/ChoiceExercise";
+import { FreeTextExercise } from "@/components/exercises/FreeTextExercise";
 import { GapExercise } from "@/components/exercises/GapExercise";
 import { ListenExercise } from "@/components/exercises/ListenExercise";
 import { MatchExercise } from "@/components/exercises/MatchExercise";
@@ -152,6 +153,13 @@ export function ExerciseSession({
           />
         ) : exercise.type === "gap" ? (
           <GapExercise
+            key={position}
+            exercise={exercise}
+            languageCode={languageCode}
+            onDone={handleDone}
+          />
+        ) : exercise.type === "freetext" ? (
+          <FreeTextExercise
             key={position}
             exercise={exercise}
             languageCode={languageCode}
