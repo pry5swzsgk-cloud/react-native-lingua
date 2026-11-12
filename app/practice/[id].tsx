@@ -16,7 +16,13 @@ import { colors } from "@/constants/theme";
 import { BOSS_SESSION_SIZE } from "@/data/bosses";
 import { getDialogs } from "@/data/dialogs";
 import { LESSONS } from "@/data/lessons";
-import { buildExercises, buildSession, Exercise } from "@/lib/exercises";
+import {
+  buildExercises,
+  buildSession,
+  Exercise,
+  ExerciseResult,
+} from "@/lib/exercises";
+import { getMistakeKey } from "@/lib/mistakes";
 import { getLessonAfter, getUnitOfLesson } from "@/lib/progress";
 import { playSound } from "@/lib/sounds";
 import { stopSpeaking } from "@/lib/speech";
@@ -29,8 +35,16 @@ import { useLearningStore } from "@/store/learningStore";
 export default function PracticeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { completedLessonIds, completeLesson, addXP, dailyChests, weeklyChests } =
-    useLearningStore();
+  const {
+    completedLessonIds,
+    completeLesson,
+    addXP,
+    dailyChests,
+    weeklyChests,
+    mistakes,
+    recordMistake,
+    resolveMistake,
+  } = useLearningStore();
 
   const lesson = LESSONS.find((l) => l.id === id);
   const languageCode = lesson
@@ -97,6 +111,16 @@ export default function PracticeScreen() {
     if (!isRepeat) completeLesson(lesson.id);
     addXP(xp);
     setResult({ xp, isRepeat, ...stats });
+  }
+
+  // Remember wrong answers for the mistakes training; a right answer
+  // takes one remembered mistake away again
+  function handleResult(exercise: Exercise, answer: ExerciseResult) {
+    if (!("itemKey" in exercise) || !exercise.itemKey) return;
+    const key = getMistakeKey(languageCode, exercise.itemKey);
+    if (answer === "wrong") recordMistake(key);
+    else if (answer === "correct" && mistakes[key] !== undefined)
+      resolveMistake(key);
   }
 
   function handleClose() {
@@ -242,6 +266,7 @@ export default function PracticeScreen() {
       languageCode={languageCode}
       onClose={handleClose}
       onFinish={handleFinish}
+      onResult={handleResult}
       boss={lesson.boss ? { name: lesson.title, emoji: lesson.icon } : undefined}
     />
   );

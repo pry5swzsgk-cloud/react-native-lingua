@@ -29,11 +29,23 @@ interface LearningState {
   mascotParts: number;
   // The mascot the learner picked in the profile
   selectedMascotId: MascotId;
+  // Mistakes still to practise: "<lang>|<word or sentence>" -> times wrong
+  mistakes: Record<string, number>;
+  // Units the learner has mastered (Master level)
+  masteredUnitIds: string[];
+  // Story scenes the learner has finished
+  completedSceneIds: string[];
   addXP: (amount: number) => void;
   completeLesson: (lessonId: string) => void;
   // Opens a waiting chest and returns what was inside (null if none waits)
   openChest: (kind: ChestKind) => Reward | null;
   selectMascot: (mascotId: MascotId) => void;
+  // Counts one more mistake for this key
+  recordMistake: (key: string) => void;
+  // Counts one mistake less; the entry is removed at 0
+  resolveMistake: (key: string) => void;
+  masterUnit: (unitId: string) => void;
+  completeScene: (sceneId: string) => void;
 }
 
 export const useLearningStore = create<LearningState>()(
@@ -48,6 +60,9 @@ export const useLearningStore = create<LearningState>()(
       weeklyChests: 0,
       mascotParts: 0,
       selectedMascotId: DEFAULT_MASCOT_ID,
+      mistakes: {},
+      masteredUnitIds: [],
+      completedSceneIds: [],
       addXP: (amount) =>
         set((state) => {
           const today = getToday();
@@ -103,6 +118,30 @@ export const useLearningStore = create<LearningState>()(
           );
           return status?.isUnlocked ? { selectedMascotId: mascotId } : {};
         }),
+      recordMistake: (key) =>
+        set((state) => ({
+          mistakes: { ...state.mistakes, [key]: (state.mistakes[key] ?? 0) + 1 },
+        })),
+      resolveMistake: (key) =>
+        set((state) => {
+          const count = state.mistakes[key];
+          if (count === undefined) return {};
+          const { [key]: removed, ...rest } = state.mistakes;
+          void removed;
+          return { mistakes: count > 1 ? { ...rest, [key]: count - 1 } : rest };
+        }),
+      masterUnit: (unitId) =>
+        set((state) =>
+          state.masteredUnitIds.includes(unitId)
+            ? {}
+            : { masteredUnitIds: [...state.masteredUnitIds, unitId] },
+        ),
+      completeScene: (sceneId) =>
+        set((state) =>
+          state.completedSceneIds.includes(sceneId)
+            ? {}
+            : { completedSceneIds: [...state.completedSceneIds, sceneId] },
+        ),
     }),
     {
       name: "learning-storage",
