@@ -19,7 +19,12 @@ import { ThemeBackground } from "@/components/map/ThemeBackground";
 import { colors } from "@/constants/theme";
 import { getMascot } from "@/data/mascots";
 import { THEMES } from "@/data/themes";
-import { buildMapLayout, getMascotSpot, MAX_MAP_WIDTH } from "@/lib/mapLayout";
+import {
+  buildMapLayout,
+  getMascotSpot,
+  getNodeSize,
+  MAX_MAP_WIDTH,
+} from "@/lib/mapLayout";
 import { getNextLesson, getUnits } from "@/lib/progress";
 import { useLanguageStore, useStartUnitOrder } from "@/store/languageStore";
 import { useLearningHydrated, useLearningStore } from "@/store/learningStore";
@@ -32,7 +37,8 @@ export default function LearnScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { selectedLanguage } = useLanguageStore();
-  const { completedLessonIds, selectedMascotId } = useLearningStore();
+  const { completedLessonIds, masteredUnitIds, selectedMascotId } =
+    useLearningStore();
   const startUnitOrder = useStartUnitOrder();
   const isHydrated = useLearningHydrated();
   const scrollRef = useRef<ScrollView>(null);
@@ -95,7 +101,11 @@ export default function LearnScreen() {
   const currentUnitDone =
     currentUnit?.lessons.filter((l) => completed.includes(l.id)).length ?? 0;
   // The mascot stands next to the level the learner is on
-  const mascotSpot = getMascotSpot(currentNode, mapWidth);
+  const mascotSpot = getMascotSpot(
+    currentNode,
+    mapWidth,
+    getNodeSize(currentNode.lesson),
+  );
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
@@ -180,6 +190,9 @@ export default function LearnScreen() {
                   completed.includes(l.id),
                 ).length;
 
+                const allDone = done === lessons.length;
+                const mastered = masteredUnitIds.includes(unit.id);
+
                 return (
                   <View
                     key={unit.id}
@@ -200,6 +213,22 @@ export default function LearnScreen() {
                     <Text className="h4" numberOfLines={1}>
                       {unit.title}
                     </Text>
+                    {allDone && (
+                      <TouchableOpacity
+                        className="self-start bg-lingua-purple rounded-full px-3 py-1 mt-1.5"
+                        activeOpacity={0.85}
+                        onPress={() =>
+                          router.push(`/training/mastery?unit=${unit.id}`)
+                        }
+                        testID={`unit-master-${unit.order}`}
+                      >
+                        <Text className="font-poppins-semibold text-xs text-white">
+                          {mastered
+                            ? "👑 Mastered · play again"
+                            : "👑 Master level"}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                     {unit.order < startUnitOrder && (
                       <Text className="caption">
                         Below your starting level, still open for review.

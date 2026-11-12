@@ -13,7 +13,7 @@ import Animated, {
 
 import { LINE_DURATION } from "@/components/map/MapLine";
 import { colors } from "@/constants/theme";
-import { LABEL_WIDTH, NODE_SIZE } from "@/lib/mapLayout";
+import { getNodeSize, LABEL_WIDTH } from "@/lib/mapLayout";
 import { Lesson } from "@/types/learning";
 
 export type MapNodeStatus = "done" | "current" | "open";
@@ -29,8 +29,6 @@ interface MapNodeProps {
 }
 
 const NODE_WIDTH = LABEL_WIDTH;
-const MINI_BOSS_SIZE = 84;
-const FINAL_BOSS_SIZE = 96;
 const BOSS_BACKGROUND = "#2B2440";
 const FINAL_BOSS_RING = "#F5A300";
 
@@ -52,12 +50,7 @@ export function MapNode({
   onPress,
 }: MapNodeProps) {
   const bossKind = lesson.boss?.kind;
-  const size =
-    bossKind === "final"
-      ? FINAL_BOSS_SIZE
-      : bossKind === "mini"
-        ? MINI_BOSS_SIZE
-        : NODE_SIZE;
+  const size = getNodeSize(lesson);
   const bossRing =
     bossKind === "final" ? FINAL_BOSS_RING : colors.primary.purple;
   const ringColor = bossKind

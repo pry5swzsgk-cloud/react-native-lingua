@@ -18,20 +18,33 @@ import { getMistakeKey } from "@/lib/mistakes";
 import { playSound } from "@/lib/sounds";
 import { stopSpeaking } from "@/lib/speech";
 import { isSpeechRecognitionSupported } from "@/lib/speechRecognition";
-import { buildTraining, TRAININGS } from "@/lib/training";
+import { buildTraining, MASTERY_XP, TRAININGS } from "@/lib/training";
 import { useLanguageStore } from "@/store/languageStore";
 import { useLearningStore } from "@/store/learningStore";
 
 // One training session (vocabulary, mistakes, speaking, ...). It works
 // like a practice session, but it is not tied to a lesson.
 export default function TrainingScreen() {
-  const { mode } = useLocalSearchParams<{ mode: string }>();
+  const { mode, unit } = useLocalSearchParams<{
+    mode: string;
+    unit?: string;
+  }>();
   const router = useRouter();
   const { selectedLanguage } = useLanguageStore();
-  const { completedLessonIds, mistakes, addXP, recordMistake, resolveMistake } =
-    useLearningStore();
+  const {
+    completedLessonIds,
+    mistakes,
+    masteredUnitIds,
+    addXP,
+    masterUnit,
+    recordMistake,
+    resolveMistake,
+  } = useLearningStore();
 
-  const info = TRAININGS.find((training) => training.mode === mode);
+  const isMastery = mode === "mastery";
+  const info = isMastery
+    ? { mode: "mastery" as const, xp: MASTERY_XP }
+    : TRAININGS.find((training) => training.mode === mode);
   const canSpeak = isSpeechRecognitionSupported();
 
   // The session is built once on the device; "Train again" builds a new one
@@ -40,6 +53,7 @@ export default function TrainingScreen() {
   const [result, setResult] = useState<{
     total: number;
     mistakes: number;
+    xp: number;
   } | null>(null);
 
   useEffect(() => {
@@ -50,13 +64,14 @@ export default function TrainingScreen() {
         completedLessonIds,
         mistakes,
         canSpeak,
+        unitId: unit,
       }),
     );
     setResult(null);
     // Built only when the screen opens or the learner trains again, not on
     // every change of the saved mistakes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [info?.mode, selectedLanguage, round]);
+  }, [info?.mode, selectedLanguage, unit, round]);
 
   function handleBack() {
     stopSpeaking();
@@ -99,6 +114,9 @@ export default function TrainingScreen() {
       "Go to the home screen and pick a language to start training.",
     );
   }
+  if (info.mode === "mastery" && exercises && exercises.length === 0) {
+    return renderEmpty("🤔", "Unit not found");
+  }
   if (info.mode === "speaking" && !canSpeak) {
     return renderEmpty(
       "🎤",
@@ -124,8 +142,17 @@ export default function TrainingScreen() {
   function handleFinish(stats: { total: number; mistakes: number }) {
     if (!info) return;
     playSound("complete");
+    if (info.mode === "mastery") {
+      // 40 XP the first time, 20 when the unit is already mastered
+      const xp =
+        unit && masteredUnitIds.includes(unit) ? MASTERY_XP / 2 : MASTERY_XP;
+      addXP(xp);
+      if (unit) masterUnit(unit);
+      setResult({ ...stats, xp });
+      return;
+    }
     addXP(info.xp);
-    setResult(stats);
+    setResult({ ...stats, xp: info.xp });
   }
 
   // Remember wrong answers; a right answer takes one mistake away again
@@ -149,12 +176,16 @@ export default function TrainingScreen() {
             style={styles.mascot}
             resizeMode="contain"
           />
-          <Text className="h2 text-center mt-4">Training complete!</Text>
+          <Text className="h2 text-center mt-4">
+            {info.mode === "mastery"
+              ? "Master level complete! 👑"
+              : "Training complete!"}
+          </Text>
           <Text
             className="body-md text-text-secondary text-center mt-1"
             testID="session-xp"
           >
-            {`You earned +${info.xp} XP`}
+            {`You earned +${result.xp} XP`}
           </Text>
           <Text
             className="body-sm text-text-secondary text-center mt-1"

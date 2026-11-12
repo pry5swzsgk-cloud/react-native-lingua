@@ -29,6 +29,7 @@ const MAX_LESSONS = 6;
 const RECENT_LESSONS = 3;
 const OLDER_LESSONS = 2;
 
+export const MASTERY_XP = 40;
 const SIZES = { vocabulary: 10, mistakes: 10, speaking: 8, listening: 8, personal: 12 };
 
 // Completed normal lessons of the language in course order.
@@ -74,7 +75,18 @@ export function buildTraining(
 ): Exercise[] {
   const { languageCode, canSpeak } = input;
   const random = input.random ?? Math.random;
-  if (mode === "mastery") return []; // comes with the master level
+
+  if (mode === "mastery") {
+    // Words and sentences of all normal lessons of the unit, hard exercises
+    const unit = getUnits(languageCode).find((entry) => entry.id === input.unitId);
+    if (!unit) return [];
+    const lessons = getUnitLessons(unit).filter((lesson) => !lesson.boss);
+    const source = {
+      ...sourceFromLessons(`training-mastery-${unit.id}`, lessons),
+      dialogs: getDialogs(languageCode, unit.level),
+    };
+    return buildSession(source, languageCode, { canSpeak, hard: true, size: 15, random });
+  }
 
   const learned = getLearnedLessons(languageCode, input.completedLessonIds);
   if (learned.length === 0) return [];

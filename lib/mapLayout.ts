@@ -10,13 +10,15 @@ import { Lesson, Unit } from "@/types/learning";
 // around between visits.
 
 export const NODE_SIZE = 72; // diameter of a level circle
+export const MINI_BOSS_SIZE = 84; // a mini boss circle
+export const FINAL_BOSS_SIZE = 96; // a final boss circle
 export const LABEL_WIDTH = 168; // a level's touch area: circle plus title
 export const MAX_MAP_WIDTH = 480; // keeps the path compact on tablets
 export const MASCOT_SIZE = 56; // the mascot's picture on the map
 const MASCOT_GAP = 6; // space between a level circle and the mascot
 const MIN_ROW_HEIGHT = 118; // smallest distance from one level to the next
 const MAX_ROW_HEIGHT = 160; // largest distance
-const UNIT_BANNER_HEIGHT = 96; // room for a unit banner
+const UNIT_BANNER_HEIGHT = 112; // room for a unit banner (with the master level button)
 const BOSS_EXTRA_GAP = 16; // extra space before and after a boss circle
 const TOP_PADDING = 8;
 const SIDE_PADDING = 6; // space between a title and the screen edge
@@ -110,15 +112,23 @@ export function buildMapLayout(units: Unit[], width: number): MapLayout {
   return { units: unitLayouts, nodes, height: y };
 }
 
+// Diameter of a level's circle: bosses are bigger
+export function getNodeSize(lesson: Lesson): number {
+  if (lesson.boss?.kind === "final") return FINAL_BOSS_SIZE;
+  if (lesson.boss?.kind === "mini") return MINI_BOSS_SIZE;
+  return NODE_SIZE;
+}
+
 // Where the mascot stands at a level: next to the circle, on the side with
 // more room. Returns the center of its picture.
 export function getMascotSpot(
   node: { x: number; y: number },
   width: number,
+  nodeSize = NODE_SIZE,
 ): { x: number; y: number } {
   const side = node.x > width / 2 ? -1 : 1; // -1 = left of the circle
   return {
-    x: node.x + side * (NODE_SIZE / 2 + MASCOT_GAP + MASCOT_SIZE / 2),
-    y: node.y - NODE_SIZE / 2 + MASCOT_GAP + MASCOT_SIZE / 2,
+    x: node.x + side * (nodeSize / 2 + MASCOT_GAP + MASCOT_SIZE / 2),
+    y: node.y - nodeSize / 2 + MASCOT_GAP + MASCOT_SIZE / 2,
   };
 }
