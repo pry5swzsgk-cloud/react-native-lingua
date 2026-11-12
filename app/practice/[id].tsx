@@ -13,8 +13,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ExerciseSession } from "@/components/exercises/ExerciseSession";
 import { images } from "@/constants/images";
 import { colors } from "@/constants/theme";
+import { BOSS_SESSION_SIZE } from "@/data/bosses";
+import { getDialogs } from "@/data/dialogs";
 import { LESSONS } from "@/data/lessons";
-import { buildExercises, Exercise } from "@/lib/exercises";
+import { buildExercises, buildSession, Exercise } from "@/lib/exercises";
 import { getLessonAfter, getUnitOfLesson } from "@/lib/progress";
 import { playSound } from "@/lib/sounds";
 import { stopSpeaking } from "@/lib/speech";
@@ -49,9 +51,25 @@ export default function PracticeScreen() {
 
   useEffect(() => {
     if (!lesson) return;
-    setExercises(
-      buildExercises(lesson, languageCode, isSpeechRecognitionSupported()),
-    );
+    const canSpeak = isSpeechRecognitionSupported();
+    if (lesson.boss) {
+      // Boss levels: a longer, harder session without the easy exercise types
+      const level = getUnitOfLesson(lesson)?.level;
+      setExercises(
+        buildSession(
+          {
+            id: lesson.id,
+            vocabulary: lesson.vocabulary,
+            phrases: lesson.phrases,
+            dialogs: level ? getDialogs(languageCode, level) : [],
+          },
+          languageCode,
+          { canSpeak, hard: true, size: BOSS_SESSION_SIZE[lesson.boss.kind] },
+        ),
+      );
+    } else {
+      setExercises(buildExercises(lesson, languageCode, canSpeak));
+    }
     setResult(null);
   }, [lesson, languageCode]);
 
