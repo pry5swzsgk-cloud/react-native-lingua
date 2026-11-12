@@ -10,7 +10,10 @@ import { LlmMessage } from "@/types/llm";
 export const SMART_XP = 5; // XP for a stretch of real conversation
 export const MESSAGES_PER_XP = 6; // learner messages needed for those XP
 const MIN_WORDS_FOR_XP = 3; // shorter messages do not count
-const MAX_HISTORY_CHARS = 1500; // keeps the chat inside the model's memory
+// The model remembers about 1000 tokens, and its own rules and answer need
+// part of that. So only the newest turns are sent: not too many, not too long.
+const MAX_HISTORY_TURNS = 10;
+const MAX_HISTORY_CHARS = 1200;
 const MAX_LEARNER_CHARS = 300; // a very long message is cut
 
 export type Level = "A1" | "A2" | "B1";
@@ -83,7 +86,9 @@ export function buildMessages(
 
   for (let i = history.length - 1; i >= 0; i--) {
     chars += history[i].text.length;
-    if (kept.length > 0 && chars > MAX_HISTORY_CHARS) break;
+    if (kept.length > 0 && (kept.length >= MAX_HISTORY_TURNS || chars > MAX_HISTORY_CHARS)) {
+      break;
+    }
     kept.unshift(history[i]);
   }
   // A chat starts with the learner's turn

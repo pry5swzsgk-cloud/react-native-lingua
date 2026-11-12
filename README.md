@@ -7,10 +7,16 @@ Lingo ist eine kostenlose Sprachlern-App für das iPhone, gebaut mit Expo und Re
 - Alle Lektionen sind frei zugänglich
 - Der Lernfortschritt wird nur lokal auf dem Gerät gespeichert
 - Die App funktioniert offline und braucht keine API-Schlüssel
+- Einzige Ausnahme: das optionale Sprachmodell für „Smart Dax“ (nur in der Web-Version). Es wird einmal heruntergeladen, wenn man auf „Download“ tippt, und liegt danach auf dem Gerät. Ohne das Modell funktioniert alles
 
 ## Tech-Stack
 
-Expo (SDK 54) · React Native · TypeScript · Expo Router · NativeWind · Zustand · AsyncStorage
+Expo (SDK 54) · React Native · TypeScript · Expo Router · NativeWind · Zustand · AsyncStorage · web-llm (optional, für Smart Dax)
+
+## Zwei Lehrer: Dax und Smart Dax
+
+- **Dax** folgt festen Regeln und Themen, läuft überall und komplett offline.
+- **Smart Dax** (Tab „AI Teacher“ → „Try Smart Dax“) führt freie Gespräche mit einem kleinen KI-Modell, das im Browser auf dem Gerät läuft (WebGPU, z. B. Safari auf iPadOS 26). Es braucht einmalig einen Download (Standard etwa 700 MB, Light etwa 400 MB) und viel Arbeitsspeicher. In der nativen iOS-/Android-App ist Smart Dax nicht verfügbar.
 
 ## Projekt starten
 
