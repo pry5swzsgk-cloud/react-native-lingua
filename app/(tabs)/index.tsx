@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useState } from "react";
 import {
   Image,
   ScrollView,
@@ -10,12 +11,28 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ChestButton } from "@/components/rewards/ChestButton";
+import { RewardDialog } from "@/components/rewards/RewardDialog";
 import { images } from "@/constants/images";
 import { colors } from "@/constants/theme";
 import { LANGUAGES } from "@/data/languages";
 import { getNextLesson, getUnitOfLesson, getUnits } from "@/lib/progress";
+import {
+  ChestKind,
+  getDailyChestState,
+  getDaysToWeeklyChest,
+  getWeeklyChestState,
+  getWeekProgress,
+  Reward,
+  WEEK_LENGTH,
+} from "@/lib/rewards";
+import { playSound } from "@/lib/sounds";
 import { useLanguageStore, useStartUnitOrder } from "@/store/languageStore";
-import { useLearningStore } from "@/store/learningStore";
+import {
+  useLearningStore,
+  useStreak,
+  useTodayXP,
+} from "@/store/learningStore";
 import { LanguageCode } from "@/types/learning";
 
 function getGreeting(langCode: LanguageCode | null): string {
@@ -65,7 +82,12 @@ const PLAN_ITEMS = [
 
 export default function HomeScreen() {
   const { selectedLanguage } = useLanguageStore();
-  const { xpToday, dailyGoal, streak, completedLessonIds } = useLearningStore();
+  const { dailyGoal, completedLessonIds, dailyChests, weeklyChests, openChest } =
+    useLearningStore();
+  const xpToday = useTodayXP();
+  const streak = useStreak();
+  // What was in the chest that was just opened (shown in a dialog)
+  const [reward, setReward] = useState<Reward | null>(null);
 
   const language = LANGUAGES.find((l) => l.code === selectedLanguage);
   // The unit of the next open lesson (first unit as a fallback)
@@ -80,6 +102,34 @@ export default function HomeScreen() {
   const greeting = getGreeting(selectedLanguage);
   const xpProgress =
     dailyGoal > 0 ? Math.min((xpToday / dailyGoal) * 100, 100) : 0;
+
+  // ── Reward chests (rules in lib/rewards.ts) ──
+  const dailyState = getDailyChestState(xpToday, dailyGoal, dailyChests);
+  const dailyStatus =
+    dailyState === "ready"
+      ? dailyChests > 1
+        ? `${dailyChests} chests are ready. Tap to open!`
+        : "Your chest is ready. Tap to open!"
+      : dailyState === "opened"
+        ? "Chest opened. Come back tomorrow!"
+        : `${dailyGoal - xpToday} XP to go for today's chest`;
+
+  const weeklyState = getWeeklyChestState(streak, weeklyChests);
+  const weekProgress = getWeekProgress(streak, weeklyChests);
+  const daysToGo = getDaysToWeeklyChest(streak);
+  const weeklyStatus =
+    weeklyState === "ready"
+      ? "Your big chest is ready. Tap to open!"
+      : weeklyState === "opened"
+        ? "Opened! Next big chest in 7 days."
+        : `${daysToGo} more ${daysToGo === 1 ? "day" : "days"} for the big chest`;
+
+  function handleOpenChest(kind: ChestKind) {
+    const opened = openChest(kind);
+    if (!opened) return;
+    playSound("complete");
+    setReward(opened);
+  }
 
   return (
     <SafeAreaView
@@ -110,12 +160,26 @@ export default function HomeScreen() {
           </View>
 
           <View className="flex-row items-center gap-[14px]">
-            <View className="flex-row items-center gap-1">
-              <Image source={images.streakFire} style={styles.streakIcon} />
-              <Text className="font-poppins-semibold text-[15px] text-streak">
+            {/* The streak, with the full overview in the profile */}
+            <TouchableOpacity
+              className="flex-row items-center gap-1"
+              activeOpacity={0.7}
+              onPress={() => router.navigate("/profile")}
+              accessibilityLabel={`${streak} day streak, open streak overview`}
+              testID="home-streak-button"
+            >
+              <Image
+                source={images.flame}
+                style={styles.streakIcon}
+                resizeMode="contain"
+              />
+              <Text
+                className="font-poppins-semibold text-[15px] text-streak"
+                testID="home-streak"
+              >
                 {streak}
               </Text>
-            </View>
+            </TouchableOpacity>
             <TouchableOpacity activeOpacity={0.7}>
               <Ionicons
                 name="notifications-outline"
@@ -133,7 +197,10 @@ export default function HomeScreen() {
               Daily goal
             </Text>
             <Text>
-              <Text className="font-poppins-bold text-[28px] text-text-primary leading-[34px]">
+              <Text
+                className="font-poppins-bold text-[28px] text-text-primary leading-[34px]"
+                testID="home-xp-today"
+              >
                 {xpToday}
               </Text>
               <Text className="font-poppins text-sm text-text-secondary leading-[34px]">
@@ -146,11 +213,64 @@ export default function HomeScreen() {
                 style={{ width: `${Math.round(xpProgress)}%` as `${number}%` }}
               />
             </View>
+            <Text
+              className="font-poppins text-xs text-text-secondary mt-2"
+              testID="daily-chest-status"
+            >
+              {dailyStatus}
+            </Text>
           </View>
-          <Image
-            source={images.treasure}
-            style={styles.treasure}
-            resizeMode="contain"
+          <ChestButton
+            kind="daily"
+            state={dailyState}
+            onPress={() => handleOpenChest("daily")}
+          />
+        </View>
+
+        {/* ── Weekly Reward Card: a bigger chest for 7 days in a row ── */}
+        <View className="flex-row items-center bg-[#F1EDFF] rounded-[20px] py-4 pl-5 pr-3 mb-4">
+          <View className="flex-1 pr-2">
+            <Text className="font-poppins text-xs text-text-secondary mb-1">
+              Weekly reward
+            </Text>
+            <Text>
+              <Text
+                className="font-poppins-bold text-[28px] text-text-primary leading-[34px]"
+                testID="home-week-progress"
+              >
+                {weekProgress}
+              </Text>
+              <Text className="font-poppins text-sm text-text-secondary leading-[34px]">
+                {` / ${WEEK_LENGTH} days in a row`}
+              </Text>
+            </Text>
+            <View className="flex-row gap-1.5 mt-[6px]">
+              {Array.from({ length: WEEK_LENGTH }, (_, day) => (
+                <View
+                  key={day}
+                  className={`w-[18px] h-[18px] rounded-full items-center justify-center ${
+                    day < weekProgress
+                      ? "bg-lingua-purple"
+                      : "bg-white border border-[#d9d2ff]"
+                  }`}
+                >
+                  {day < weekProgress && (
+                    <Ionicons name="checkmark" size={11} color="#fff" />
+                  )}
+                </View>
+              ))}
+            </View>
+            <Text
+              className="font-poppins text-xs text-text-secondary mt-2"
+              testID="weekly-chest-status"
+            >
+              {weeklyStatus}
+            </Text>
+          </View>
+          <ChestButton
+            kind="weekly"
+            state={weeklyState}
+            onPress={() => handleOpenChest("weekly")}
           />
         </View>
 
@@ -233,6 +353,15 @@ export default function HomeScreen() {
           ))}
         </View>
       </ScrollView>
+
+      <RewardDialog
+        reward={reward}
+        onClose={() => setReward(null)}
+        onOpenProfile={() => {
+          setReward(null);
+          router.navigate("/profile");
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -240,7 +369,6 @@ export default function HomeScreen() {
 // ScrollView.contentContainerStyle and shadow (iOS/Android) must stay in StyleSheet
 const styles = StyleSheet.create({
   streakIcon: { width: 22, height: 22 },
-  treasure: { width: 80, height: 80 },
   palace: { width: 130, height: 160 },
   scrollContent: {
     paddingHorizontal: 20,

@@ -33,7 +33,8 @@ import { useLearningStore } from "@/store/learningStore";
 export default function PracticeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { completedLessonIds, completeLesson, addXP } = useLearningStore();
+  const { completedLessonIds, completeLesson, addXP, dailyChests, weeklyChests } =
+    useLearningStore();
 
   const lesson = LESSONS.find((l) => l.id === id);
   const languageCode = lesson
@@ -47,8 +48,12 @@ export default function PracticeScreen() {
   const [position, setPosition] = useState(0);
   const [solved, setSolved] = useState(0);
   const [mistakes, setMistakes] = useState(0);
-  // XP earned when the session was finished (0 on a repeat), null = running
-  const [earnedXP, setEarnedXP] = useState<number | null>(null);
+  // Set when the session is finished: the XP it gave and whether the
+  // lesson was done before. null = still running.
+  const [result, setResult] = useState<{
+    xp: number;
+    isRepeat: boolean;
+  } | null>(null);
 
   useEffect(() => {
     if (!lesson) return;
@@ -62,7 +67,7 @@ export default function PracticeScreen() {
     setPosition(0);
     setSolved(0);
     setMistakes(0);
-    setEarnedXP(null);
+    setResult(null);
   }, [lesson, languageCode]);
 
   if (!lesson) {
@@ -99,11 +104,12 @@ export default function PracticeScreen() {
     // Everything is solved: the lesson counts as complete now
     playSound("complete");
     const isRepeat = completedLessonIds.includes(lesson.id);
-    if (!isRepeat) {
-      completeLesson(lesson.id);
-      addXP(lesson.xpReward);
-    }
-    setEarnedXP(isRepeat ? 0 : lesson.xpReward);
+    // Repeating a lesson is worth half the XP. So reviewing also counts
+    // for the daily goal and the streak, even when every lesson is done.
+    const xp = isRepeat ? Math.ceil(lesson.xpReward / 2) : lesson.xpReward;
+    if (!isRepeat) completeLesson(lesson.id);
+    addXP(xp);
+    setResult({ xp, isRepeat });
   }
 
   function handleClose() {
@@ -113,7 +119,7 @@ export default function PracticeScreen() {
   }
 
   // ── Session finished ──
-  if (earnedXP !== null) {
+  if (result !== null) {
     const nextLesson = getLessonAfter(lesson, completedLessonIds);
     const nextUnit = nextLesson && getUnitOfLesson(nextLesson);
     const isLevelUp =
@@ -130,10 +136,13 @@ export default function PracticeScreen() {
             resizeMode="contain"
           />
           <Text className="h2 text-center mt-4">Lesson complete!</Text>
-          <Text className="body-md text-text-secondary text-center mt-1">
-            {earnedXP > 0
-              ? `You earned +${earnedXP} XP`
-              : "Nice review! You already earned the XP for this lesson."}
+          <Text
+            className="body-md text-text-secondary text-center mt-1"
+            testID="session-xp"
+          >
+            {result.isRepeat
+              ? `Nice review! You earned +${result.xp} XP`
+              : `You earned +${result.xp} XP`}
           </Text>
           <Text
             className="body-sm text-text-secondary text-center mt-1"
@@ -143,6 +152,16 @@ export default function PracticeScreen() {
               ? `${total} exercises, no mistakes. Perfect!`
               : `${total} exercises, ${mistakes} ${mistakes === 1 ? "mistake" : "mistakes"} fixed.`}
           </Text>
+          {dailyChests + weeklyChests > 0 && (
+            <View
+              className="bg-[#FFF5E8] rounded-full px-4 py-2 mt-4"
+              testID="chest-hint"
+            >
+              <Text className="font-poppins-medium text-[13px] text-text-primary text-center">
+                🎁 A reward chest is waiting on your home screen!
+              </Text>
+            </View>
+          )}
 
           {nextLesson ? (
             <View

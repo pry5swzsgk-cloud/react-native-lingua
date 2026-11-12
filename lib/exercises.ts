@@ -166,6 +166,20 @@ function shuffleWithoutRepeats(exercises: Exercise[], random: () => number): Exe
 }
 
 const SESSION_SIZE = 9; // exercises per session (7 without speaking)
+// Writing down what you hear is hard, so the text stays short
+const MAX_DICTATION_WORDS = 5;
+
+// "¿Cómo estás?" has 2 words; a lone "?" (French puts a space before it)
+// does not count
+function countWords(text: string): number {
+  return text.split(/\s+/).filter((part) => /[\p{L}\p{N}]/u.test(part)).length;
+}
+
+// Several words, but not too many to keep in mind
+function isShortText(text: string): boolean {
+  const count = countWords(text);
+  return count >= 2 && count <= MAX_DICTATION_WORDS;
+}
 
 // Builds one practice session for a lesson. Every session is different:
 // each kind of exercise appears at least once, the remaining places get a
@@ -194,13 +208,16 @@ export function buildExercises(
   }
 
   // 2. Fill them with content
-  // The sentence to write down: a real sentence (several words) if there is
-  // one. Speaking exercises use the other sentences first.
-  const longSentences = phrases.filter((p) => p.text.trim().includes(" "));
-  const sentence = (longSentences.length > 0 ? longSentences : phrases)[0];
+  // One dictation is more than a single word: a short sentence of the
+  // lesson (at most 5 words). If every sentence is longer, a short
+  // expression from the vocabulary is used instead ("La semana pasada").
+  const shortSentence = phrases.find((p) => isShortText(p.text));
+  const shortExpression = words.find((v) => isShortText(v.word));
+  const longDictation = shortSentence?.text ?? shortExpression?.word ?? null;
+  // Speaking exercises use the other sentences first
   const speakPhrases = [
-    ...phrases.filter((p) => p !== sentence),
-    ...(sentence ? [sentence] : []),
+    ...phrases.filter((p) => p !== shortSentence),
+    ...(shortSentence ? [shortSentence] : []),
   ];
   let nextWord = 0;
   let nextPhrase = 0;
@@ -220,14 +237,15 @@ export function buildExercises(
       case "speak":
         return buildSpeak(id(kind, index), speakPhrases[nextPhrase++]);
       case "dictation":
-        // The first dictation is a whole sentence (a word for Japanese)
-        if (!hasSentenceDictation && !inEnglish && sentence) {
+        // The first dictation is the short sentence (not for Japanese,
+        // where the learner types the English meaning of a word)
+        if (!hasSentenceDictation && !inEnglish && longDictation) {
           hasSentenceDictation = true;
           return {
             type: "dictation",
             id: id(kind, index),
-            audio: sentence.text,
-            answer: sentence.text,
+            audio: longDictation,
+            answer: longDictation,
             answerInEnglish: false,
           };
         }
