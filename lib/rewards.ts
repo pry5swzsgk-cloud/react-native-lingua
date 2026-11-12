@@ -46,11 +46,38 @@ export function getEarnedChests(
   return { daily, weekly };
 }
 
+// ── Showing chests ──
+
+//   locked - not earned yet
+//   ready  - earned, waits to be opened
+//   opened - opened, the next one is not earned yet
+export type ChestState = "locked" | "ready" | "opened";
+
+export function getDailyChestState(
+  xpToday: number,
+  dailyGoal: number,
+  waitingDailyChests: number,
+): ChestState {
+  if (waitingDailyChests > 0) return "ready";
+  // Goal reached and nothing waits: today's chest was opened already
+  return xpToday >= dailyGoal ? "opened" : "locked";
+}
+
+export function getWeeklyChestState(
+  streak: number,
+  waitingWeeklyChests: number,
+): ChestState {
+  if (waitingWeeklyChests > 0) return "ready";
+  // A full week and nothing waits: this week's chest was opened already
+  return streak > 0 && streak % WEEK_LENGTH === 0 ? "opened" : "locked";
+}
+
 // Days of the current streak week that are done: 0 … 7.
-// 7 while a weekly chest waits to be opened.
+// It stays at 7 until the first day of the next week is learned.
 export function getWeekProgress(streak: number, waitingWeeklyChests: number): number {
-  if (waitingWeeklyChests > 0) return WEEK_LENGTH;
-  return streak % WEEK_LENGTH;
+  return getWeeklyChestState(streak, waitingWeeklyChests) === "locked"
+    ? streak % WEEK_LENGTH
+    : WEEK_LENGTH;
 }
 
 // How many more days in a row are needed for the next weekly chest
