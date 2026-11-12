@@ -119,3 +119,18 @@ export interface Unit {
   order: number;
   lessonIds: string[];
 }
+
+// A short spoken dialog: Dax asks a question, the learner answers.
+// `keywords` are lowercase words without accents that fit most good answers.
+// `wrongReplies` are correct sentences that do not answer the question.
+export interface DialogItem {
+  id: string;
+  languageCode: LanguageCode;
+  level: UnitLevel;
+  question: string;
+  questionTranslation: string;
+  reply: string;
+  replyTranslation: string;
+  keywords: string[];
+  wrongReplies: string[];
+}
