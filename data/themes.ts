@@ -244,4 +244,12 @@ export const THEMES: Record<ThemeId, Theme> = {
     accent: "#E5484D",
     decor: ["🎯", "🌠", "🏆", "💪", "🚀"],
   },
+  boss: {
+    id: "boss",
+    title: "Boss Fight",
+    emoji: "⚔️",
+    background: "#2B2440",
+    accent: "#F5A300",
+    decor: ["⚔️", "🛡️", "🔥", "👑", "💥"],
+  },
 };
