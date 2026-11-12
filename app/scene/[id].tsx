@@ -14,9 +14,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { SpeakButton } from "@/components/SpeakButton";
 import { images } from "@/constants/images";
 import { colors } from "@/constants/theme";
+import { LANGUAGES } from "@/data/languages";
 import { getScene } from "@/data/scenes";
+import { comparePronunciation } from "@/lib/pronunciation";
 import { playSound } from "@/lib/sounds";
 import { speak, stopSpeaking } from "@/lib/speech";
+import {
+  isSpeechRecognitionSupported,
+  listenOnce,
+} from "@/lib/speechRecognition";
 import { useLearningStore } from "@/store/learningStore";
 import { LanguageCode } from "@/types/learning";
 import { SceneKind } from "@/types/scenes";
@@ -110,6 +116,14 @@ export default function SceneScreen() {
   const [round, setRound] = useState(0);
   const [showTranscript, setShowTranscript] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+  // Roleplay "Say it": optional speaking of the chosen reply
+  const [canSay] = useState(() => isSpeechRecognitionSupported());
+  const [listeningStep, setListeningStep] = useState<number | null>(null);
+  const [said, setSaid] = useState<
+    Record<number, { heard: string; passed: boolean }>
+  >({});
+  const [sayError, setSayError] = useState("");
+  const stopListeningRef = useRef<(() => void) | null>(null);
 
   // Read a new line aloud once when it appears
   useEffect(() => {
@@ -119,13 +133,17 @@ export default function SceneScreen() {
     }
   }, [scene, shown, round]);
 
-  // Stop the voice when leaving the screen
+  // Stop the voice and the microphone when leaving the screen
   useEffect(() => {
-    return () => stopSpeaking();
+    return () => {
+      stopSpeaking();
+      stopListeningRef.current?.();
+    };
   }, []);
 
   function handleBack() {
     stopSpeaking();
+    stopListeningRef.current?.();
     if (router.canGoBack()) router.back();
     else router.replace("/chat");
   }
@@ -190,8 +208,38 @@ export default function SceneScreen() {
     }
   }
 
+  // Tap once to listen, tap again to stop
+  function handleSay(index: number, text: string) {
+    if (!scene) return;
+    if (listeningStep === index) {
+      stopListeningRef.current?.();
+      return;
+    }
+    const locale =
+      LANGUAGES.find((l) => l.code === scene.languageCode)?.speechLocale ??
+      "en-US";
+    // The microphone must not hear the voice reading the sentence
+    stopSpeaking();
+    setListeningStep(index);
+    setSayError("");
+    stopListeningRef.current = listenOnce(locale, {
+      onPartial: () => {},
+      onResult: (transcript) => {
+        const comparison = comparePronunciation(text, transcript);
+        playSound(comparison.passed ? "correct" : "wrong");
+        setSaid((prev) => ({
+          ...prev,
+          [index]: { heard: transcript, passed: comparison.passed },
+        }));
+      },
+      onError: setSayError,
+      onEnd: () => setListeningStep(null),
+    }).stop;
+  }
+
   function handleContinue() {
     if (!scene) return;
+    stopListeningRef.current?.();
     if (shown < total) {
       setShown(shown + 1);
       return;
@@ -210,6 +258,8 @@ export default function SceneScreen() {
   function handlePlayAgain() {
     stopSpeaking();
     setAnswers({});
+    setSaid({});
+    setSayError("");
     setShown(1);
     setXp(null);
     setShowTranscript(false);
@@ -366,6 +416,39 @@ export default function SceneScreen() {
                   languageCode={scene.languageCode}
                   mine
                 />
+                {scene.kind === "roleplay" && canSay && (
+                  <View className="self-end items-end mb-3">
+                    <TouchableOpacity
+                      className={`rounded-full px-4 py-2 border ${listeningStep === index ? "bg-lingua-purple border-lingua-purple" : "bg-white border-border"}`}
+                      activeOpacity={0.85}
+                      onPress={() => handleSay(index, chosen.text)}
+                      testID="scene-say-button"
+                    >
+                      <Text
+                        className={`font-poppins-semibold text-sm ${listeningStep === index ? "text-white" : "text-text-primary"}`}
+                      >
+                        {listeningStep === index
+                          ? "Listening… tap to stop"
+                          : "🎤 Say it"}
+                      </Text>
+                    </TouchableOpacity>
+                    {said[index] && listeningStep !== index && (
+                      <Text
+                        className="font-poppins-regular text-sm text-text-secondary mt-2 text-right"
+                        testID="scene-say-result"
+                      >
+                        {said[index].passed
+                          ? "Great! You said it."
+                          : `I heard: ${said[index].heard}. Try again or continue.`}
+                      </Text>
+                    )}
+                    {sayError !== "" && listeningStep !== index && (
+                      <Text className="font-poppins-regular text-xs text-error mt-1 text-right">
+                        {sayError}
+                      </Text>
+                    )}
+                  </View>
+                )}
                 {chosen.feedback && (
                   <Text className="font-poppins-regular text-sm text-text-secondary mb-3">
                     {chosen.feedback}

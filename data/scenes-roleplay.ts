@@ -1,0 +1,237 @@
+import { Scene } from "@/types/scenes";
+
+// Roleplays: the learner has a role in a real-life situation. The other person
+// speaks Spanish, and the learner picks (and can say out loud) the right reply.
+export const ROLEPLAYS: Scene[] = [
+  {
+    id: "es-roleplay-a1-1",
+    kind: "roleplay",
+    languageCode: "es",
+    level: "A1",
+    title: "At the café",
+    description: "Order a coffee and pay the bill.",
+    emoji: "☕",
+    xpReward: 10,
+    steps: [
+      { type: "narration", text: "You are a guest at a café in Madrid." },
+      { type: "line", speaker: "Camarero", text: "¡Buenas tardes! ¿Qué quiere tomar?", translation: "Good afternoon! What would you like to drink?" },
+      {
+        type: "reply",
+        prompt: "Order a coffee with milk.",
+        options: [
+          { text: "Quiero un café con leche, por favor.", translation: "I want a coffee with milk, please.", feedback: "Right! The waiter writes down your coffee with milk." },
+          { text: "Quiero un té con limón, por favor.", translation: "I want a tea with lemon, please.", feedback: "That is a tea with lemon, not a coffee with milk." },
+          { text: "Quiero una cerveza fría, por favor.", translation: "I want a cold beer, please.", feedback: "That is a cold beer. You wanted a coffee with milk." },
+        ],
+        answer: "Quiero un café con leche, por favor.",
+      },
+      { type: "line", speaker: "Camarero", text: "Muy bien. ¿Quiere comer algo?", translation: "Very good. Would you like to eat something?" },
+      {
+        type: "reply",
+        prompt: "Say that you want a piece of cake.",
+        options: [
+          { text: "Sí, quiero un trozo de tarta.", translation: "Yes, I want a piece of cake.", feedback: "Right! A piece of cake is on its way." },
+          { text: "No, gracias. No tengo hambre.", translation: "No, thank you. I am not hungry.", feedback: "That means you do not want anything to eat." },
+          { text: "Sí, quiero una ensalada grande.", translation: "Yes, I want a big salad.", feedback: "That is a big salad, not a piece of cake." },
+        ],
+        answer: "Sí, quiero un trozo de tarta.",
+      },
+      { type: "line", speaker: "Camarero", text: "Aquí tiene. ¿Algo más?", translation: "Here you are. Anything else?" },
+      {
+        type: "reply",
+        prompt: "Ask for a glass of water.",
+        options: [
+          { text: "Sí, un vaso de agua, por favor.", translation: "Yes, a glass of water, please.", feedback: "Right! The waiter brings you a cold glass of water." },
+          { text: "No, nada más, gracias.", translation: "No, nothing else, thank you.", feedback: "That means you do not need anything else." },
+          { text: "Sí, la carta, por favor.", translation: "Yes, the menu, please.", feedback: "That asks for the menu, not for water." },
+        ],
+        answer: "Sí, un vaso de agua, por favor.",
+      },
+      { type: "line", speaker: "Camarero", text: "Por supuesto. ¿Quiere pagar ahora?", translation: "Of course. Would you like to pay now?" },
+      {
+        type: "reply",
+        prompt: "Say yes and ask how much it is.",
+        options: [
+          { text: "Sí. ¿Cuánto es?", translation: "Yes. How much is it?", feedback: "Right! Now you will hear the price." },
+          { text: "Sí. ¿Dónde está el baño?", translation: "Yes. Where is the bathroom?", feedback: "That asks where the bathroom is, not the price." },
+          { text: "No. Me gusta el café.", translation: "No. I like the coffee.", feedback: "Nice, but you wanted to know the price." },
+        ],
+        answer: "Sí. ¿Cuánto es?",
+      },
+      { type: "line", speaker: "Camarero", text: "Son cuatro euros con cincuenta.", translation: "That is four euros fifty." },
+      {
+        type: "reply",
+        prompt: "Hand over the money and say thank you.",
+        options: [
+          { text: "Aquí tiene. Muchas gracias.", translation: "Here you are. Thank you very much.", feedback: "Right! The waiter takes the money and smiles." },
+          { text: "Perdón, no entiendo.", translation: "Sorry, I do not understand.", feedback: "That says you did not understand." },
+          { text: "Hasta mañana, buenas noches.", translation: "See you tomorrow, good night.", feedback: "Too early to say good night. You still need to pay!" },
+        ],
+        answer: "Aquí tiene. Muchas gracias.",
+      },
+      { type: "line", speaker: "Camarero", text: "De nada. ¡Hasta pronto!", translation: "You are welcome. See you soon!" },
+      { type: "narration", text: "Well done! You ordered, ate and paid at the café." },
+    ],
+  },
+  {
+    id: "es-roleplay-a2-1",
+    kind: "roleplay",
+    languageCode: "es",
+    level: "A2",
+    title: "At the hotel",
+    description: "Check in and ask about breakfast and wifi.",
+    emoji: "🏨",
+    xpReward: 15,
+    steps: [
+      { type: "narration", text: "You are a guest arriving at a hotel in Seville after a long trip." },
+      { type: "line", speaker: "Recepcionista", text: "Buenas noches. Bienvenido. ¿Tiene una reserva?", translation: "Good evening. Welcome. Do you have a reservation?" },
+      {
+        type: "reply",
+        prompt: "Say that you have a reservation under the name García.",
+        options: [
+          { text: "Sí, tengo una reserva a nombre de García.", translation: "Yes, I have a reservation under the name García.", feedback: "Right! The receptionist finds your name on the list." },
+          { text: "No, no tengo reserva.", translation: "No, I do not have a reservation.", feedback: "That says you have no reservation." },
+          { text: "Sí, quiero una mesa para dos.", translation: "Yes, I want a table for two.", feedback: "That asks for a table, like in a restaurant." },
+        ],
+        answer: "Sí, tengo una reserva a nombre de García.",
+      },
+      { type: "line", speaker: "Recepcionista", text: "Perfecto. ¿Hasta cuándo va a quedarse?", translation: "Perfect. Until when are you going to stay?" },
+      {
+        type: "reply",
+        prompt: "Say that you are staying until Sunday.",
+        options: [
+          { text: "Me quedo hasta el domingo.", translation: "I am staying until Sunday.", feedback: "Right! The receptionist notes your check-out day." },
+          { text: "Llegué ayer por la mañana.", translation: "I arrived yesterday morning.", feedback: "That tells when you arrived, not how long you stay." },
+          { text: "Me quedo con la habitación pequeña.", translation: "I will take the small room.", feedback: "That is about the room size, not the days." },
+        ],
+        answer: "Me quedo hasta el domingo.",
+      },
+      { type: "line", speaker: "Recepcionista", text: "Su habitación está en el segundo piso.", translation: "Your room is on the second floor." },
+      {
+        type: "reply",
+        prompt: "Ask if breakfast is included.",
+        options: [
+          { text: "¿El desayuno está incluido?", translation: "Is breakfast included?", feedback: "Right! Good question before you go to bed." },
+          { text: "¿El ascensor está roto?", translation: "Is the lift broken?", feedback: "That asks about the lift, not about breakfast." },
+          { text: "¿La piscina está abierta?", translation: "Is the pool open?", feedback: "That asks about the pool, not about breakfast." },
+        ],
+        answer: "¿El desayuno está incluido?",
+      },
+      { type: "line", speaker: "Recepcionista", text: "Sí, el desayuno es de siete a diez.", translation: "Yes, breakfast is from seven to ten." },
+      {
+        type: "reply",
+        prompt: "Ask for the wifi password.",
+        options: [
+          { text: "¿Cuál es la contraseña del wifi?", translation: "What is the wifi password?", feedback: "Right! Now you can go online." },
+          { text: "¿Cuál es el número de teléfono?", translation: "What is the phone number?", feedback: "That asks for a phone number, not the wifi password." },
+          { text: "¿Cuál es la dirección del hotel?", translation: "What is the address of the hotel?", feedback: "That asks for the hotel address, not the wifi password." },
+        ],
+        answer: "¿Cuál es la contraseña del wifi?",
+      },
+      { type: "line", speaker: "Recepcionista", text: "Está en la tarjeta. Es gratis para los huéspedes.", translation: "It is on the card. It is free for guests." },
+      {
+        type: "reply",
+        prompt: "Say thanks and ask where the lift is.",
+        options: [
+          { text: "Gracias. ¿Dónde está el ascensor?", translation: "Thanks. Where is the lift?", feedback: "Right! You are tired and want to find your room." },
+          { text: "Gracias. ¿Dónde está la playa?", translation: "Thanks. Where is the beach?", feedback: "That asks for the beach, not the lift." },
+          { text: "Gracias. ¿Dónde está el aeropuerto?", translation: "Thanks. Where is the airport?", feedback: "That asks for the airport, not the lift." },
+        ],
+        answer: "Gracias. ¿Dónde está el ascensor?",
+      },
+      { type: "line", speaker: "Recepcionista", text: "Al fondo, a la derecha. Que descanse.", translation: "At the back, on the right. Have a good rest." },
+      {
+        type: "reply",
+        prompt: "Wish the receptionist a good night.",
+        options: [
+          { text: "Gracias, igualmente. Buenas noches.", translation: "Thank you, same to you. Good night.", feedback: "Right! A friendly end to a long day." },
+          { text: "Perdone, quiero cambiar de habitación.", translation: "Excuse me, I want to change rooms.", feedback: "That asks for a different room." },
+          { text: "Gracias, tengo mucha hambre.", translation: "Thanks, I am very hungry.", feedback: "That says you are hungry." },
+        ],
+        answer: "Gracias, igualmente. Buenas noches.",
+      },
+      { type: "narration", text: "Great! You checked in and found out about breakfast and wifi." },
+    ],
+  },
+  {
+    id: "es-roleplay-b1-1",
+    kind: "roleplay",
+    languageCode: "es",
+    level: "B1",
+    title: "At the doctor",
+    description: "Describe your symptoms and understand the advice.",
+    emoji: "🩺",
+    xpReward: 20,
+    steps: [
+      { type: "narration", text: "You are a patient at a doctor's office in Madrid. You do not feel well." },
+      { type: "line", speaker: "Doctora", text: "Buenos días. Siéntese, por favor. ¿Qué le pasa?", translation: "Good morning. Please sit down. What is wrong?" },
+      {
+        type: "reply",
+        prompt: "Say that you have had a headache and a fever since yesterday.",
+        options: [
+          { text: "Desde ayer tengo dolor de cabeza y fiebre.", translation: "Since yesterday I have a headache and a fever.", feedback: "Right! The doctor listens carefully." },
+          { text: "Desde ayer tengo mucho trabajo y poco tiempo.", translation: "Since yesterday I have a lot of work and little time.", feedback: "That is about being busy, not about being ill." },
+          { text: "Desde ayer estoy de vacaciones con mi familia.", translation: "Since yesterday I have been on holiday with my family.", feedback: "That is about a holiday, not about symptoms." },
+        ],
+        answer: "Desde ayer tengo dolor de cabeza y fiebre.",
+      },
+      { type: "line", speaker: "Doctora", text: "¿Tiene también tos o dolor de garganta?", translation: "Do you also have a cough or a sore throat?" },
+      {
+        type: "reply",
+        prompt: "Say that your throat hurts, but you have no cough.",
+        options: [
+          { text: "Me duele la garganta, pero no tengo tos.", translation: "My throat hurts, but I do not have a cough.", feedback: "Right! Clear and exact." },
+          { text: "Tengo tos, pero la garganta está bien.", translation: "I have a cough, but my throat is fine.", feedback: "That is the other way round." },
+          { text: "No me duele nada, me siento muy bien.", translation: "Nothing hurts, I feel very well.", feedback: "That says you are healthy." },
+        ],
+        answer: "Me duele la garganta, pero no tengo tos.",
+      },
+      { type: "line", speaker: "Doctora", text: "¿Ha tomado alguna medicina?", translation: "Have you taken any medicine?" },
+      {
+        type: "reply",
+        prompt: "Say that you took a pill this morning.",
+        options: [
+          { text: "Sí, esta mañana me tomé una pastilla.", translation: "Yes, this morning I took a pill.", feedback: "Right! The doctor nods and writes it down." },
+          { text: "No, todavía no he desayunado.", translation: "No, I have not had breakfast yet.", feedback: "That is about breakfast, not about medicine." },
+          { text: "Sí, ayer compré unas gafas nuevas.", translation: "Yes, yesterday I bought new glasses.", feedback: "That is about glasses, not about medicine." },
+        ],
+        answer: "Sí, esta mañana me tomé una pastilla.",
+      },
+      { type: "line", speaker: "Doctora", text: "Voy a examinarle. Respire hondo, por favor.", translation: "I am going to examine you. Breathe deeply, please." },
+      {
+        type: "reply",
+        prompt: "Ask if it is serious.",
+        options: [
+          { text: "¿Es algo grave, doctora?", translation: "Is it something serious, doctor?", feedback: "Right! It is natural to worry." },
+          { text: "¿Es esta la farmacia, doctora?", translation: "Is this the pharmacy, doctor?", feedback: "That asks if this is the pharmacy." },
+          { text: "¿Es usted la nueva enfermera?", translation: "Are you the new nurse?", feedback: "That asks if she is the new nurse." },
+        ],
+        answer: "¿Es algo grave, doctora?",
+      },
+      { type: "line", speaker: "Doctora", text: "No es grave. Es una gripe. Debe descansar y beber mucha agua.", translation: "It is not serious. It is the flu. You must rest and drink a lot of water." },
+      {
+        type: "reply",
+        prompt: "Ask if you can go to work tomorrow.",
+        options: [
+          { text: "¿Puedo ir a trabajar mañana?", translation: "Can I go to work tomorrow?", feedback: "Right! Let us see what the doctor says." },
+          { text: "¿Puedo comer pizza esta noche?", translation: "Can I eat pizza tonight?", feedback: "That asks about pizza, not about work." },
+          { text: "¿Puedo hablar con su jefe?", translation: "Can I speak with your boss?", feedback: "That asks to speak with her boss." },
+        ],
+        answer: "¿Puedo ir a trabajar mañana?",
+      },
+      { type: "line", speaker: "Doctora", text: "Mejor quédese en casa dos días.", translation: "Better stay at home for two days." },
+      {
+        type: "reply",
+        prompt: "Ask how many times a day you should take the medicine.",
+        options: [
+          { text: "¿Cuántas veces al día tomo la medicina?", translation: "How many times a day do I take the medicine?", feedback: "Right! Good to know exactly." },
+          { text: "¿Cuántos años tiene usted, doctora?", translation: "How old are you, doctor?", feedback: "That asks the doctor's age." },
+          { text: "¿Cuántas personas hay en la sala?", translation: "How many people are in the room?", feedback: "That asks about the people in the room." },
+        ],
+        answer: "¿Cuántas veces al día tomo la medicina?",
+      },
+      { type: "line", speaker: "Doctora", text: "Una pastilla cada ocho horas, con comida.", translation: "One pill every eight hours, with food." },
+      { type: "narration", text: "Well done! You described your symptoms and understood the doctor's advice." },
+    ],
+  },
+];
