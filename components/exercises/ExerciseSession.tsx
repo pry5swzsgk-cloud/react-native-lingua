@@ -8,6 +8,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ChoiceExercise } from "@/components/exercises/ChoiceExercise";
@@ -31,6 +37,8 @@ interface ExerciseSessionProps {
   onFinish: (stats: { total: number; mistakes: number }) => void;
   // Called after every answer
   onResult?: (exercise: Exercise, result: ExerciseResult) => void;
+  // Boss fight: shows the boss with a health bar instead of the progress bar
+  boss?: { name: string; emoji: string };
 }
 
 // One run through a list of exercises. Wrong answers come back at the end
@@ -41,12 +49,15 @@ export function ExerciseSession({
   onClose,
   onFinish,
   onResult,
+  boss,
 }: ExerciseSessionProps) {
   const [queue, setQueue] = useState<Exercise[]>(exercises);
   const [position, setPosition] = useState(0);
   const [solved, setSolved] = useState(0);
   const [mistakes, setMistakes] = useState(0);
   const total = exercises.length;
+  const shake = useSharedValue(0); // boss moves left and right
+  const hit = useSharedValue(1); // boss scale
 
   function handleDone(result: ExerciseResult) {
     stopSpeaking();
@@ -56,12 +67,28 @@ export function ExerciseSession({
     let nextQueue = queue;
     let nextMistakes = mistakes;
     if (result === "wrong") {
+      // The boss laughs: it shakes a little
+      shake.set(
+        withSequence(
+          withTiming(-8, { duration: 50 }),
+          withTiming(8, { duration: 100 }),
+          withTiming(-8, { duration: 100 }),
+          withTiming(0, { duration: 50 }),
+        ),
+      );
       // Ask the same exercise again at the end of the session
       nextQueue = [...queue, current];
       nextMistakes = mistakes + 1;
       setQueue(nextQueue);
       setMistakes(nextMistakes);
     } else {
+      // The boss flinches
+      hit.set(
+        withSequence(
+          withTiming(0.85, { duration: 100 }),
+          withTiming(1, { duration: 150 }),
+        ),
+      );
       setSolved(solved + 1);
     }
 
@@ -76,6 +103,10 @@ export function ExerciseSession({
 
   const exercise = queue[position];
   const progress = total > 0 ? Math.round((solved / total) * 100) : 0;
+  const health = 100 - progress;
+  const bossStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: shake.get() }, { scale: hit.get() }],
+  }));
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.neutral.background }}>
@@ -98,12 +129,35 @@ export function ExerciseSession({
               color={colors.neutral.textSecondary}
             />
           </TouchableOpacity>
-          <View className="flex-1 h-3 bg-border rounded-full overflow-hidden">
-            <View
-              className="h-3 bg-success rounded-full"
-              style={{ width: `${progress}%` }}
-            />
-          </View>
+          {boss ? (
+            <View className="flex-1 flex-row items-center gap-2">
+              <Animated.Text style={[{ fontSize: 28 }, bossStyle]}>
+                {boss.emoji}
+              </Animated.Text>
+              <View className="flex-1 gap-1">
+                <Text className="font-poppins-semibold text-xs text-text-primary" numberOfLines={1}>
+                  {boss.name}
+                </Text>
+                <View
+                  className="h-3 bg-border rounded-full overflow-hidden"
+                  accessibilityLabel={`Boss health ${health}%`}
+                  testID="boss-health"
+                >
+                  <View
+                    className="h-3 bg-error rounded-full"
+                    style={{ width: `${health}%` }}
+                  />
+                </View>
+              </View>
+            </View>
+          ) : (
+            <View className="flex-1 h-3 bg-border rounded-full overflow-hidden">
+              <View
+                className="h-3 bg-success rounded-full"
+                style={{ width: `${progress}%` }}
+              />
+            </View>
+          )}
           <Text className="caption" testID="practice-progress">
             {solved}/{total}
           </Text>

@@ -117,12 +117,27 @@ export default function PracticeScreen() {
         style={{ flex: 1, backgroundColor: colors.neutral.background }}
       >
         <View className="flex-1 items-center justify-center px-6">
-          <Image
-            source={images.mascotDog}
-            style={styles.mascot}
-            resizeMode="contain"
-          />
-          <Text className="h2 text-center mt-4">Lesson complete!</Text>
+          {lesson.boss ? (
+            <Text style={styles.bossEmoji}>{lesson.icon}</Text>
+          ) : (
+            <Image
+              source={images.mascotDog}
+              style={styles.mascot}
+              resizeMode="contain"
+            />
+          )}
+          <Text className="h2 text-center mt-4">
+            {lesson.boss
+              ? lesson.boss.kind === "final"
+                ? "Final boss defeated!"
+                : "Mini boss defeated!"
+              : "Lesson complete!"}
+          </Text>
+          {lesson.boss?.kind === "final" && (
+            <Text className="h3 text-center mt-1">
+              {getUnitOfLesson(lesson)?.level} complete 🎉
+            </Text>
+          )}
           <Text
             className="body-md text-text-secondary text-center mt-1"
             testID="session-xp"
@@ -227,10 +242,12 @@ export default function PracticeScreen() {
       languageCode={languageCode}
       onClose={handleClose}
       onFinish={handleFinish}
+      boss={lesson.boss ? { name: lesson.title, emoji: lesson.icon } : undefined}
     />
   );
 }
 
 const styles = StyleSheet.create({
   mascot: { width: 180, height: 180 },
+  bossEmoji: { fontSize: 96, lineHeight: 120 },
 });
