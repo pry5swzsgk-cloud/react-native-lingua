@@ -102,6 +102,7 @@ export function FreeTextExercise({ exercise, languageCode, onDone }: FreeTextExe
         status={status}
         canCheck={typed.trim() !== ""}
         onCheck={handleCheck}
+        almostTitle="Good try! Compare with the example"
         onContinue={() => onDone(status === "wrong" ? "wrong" : "correct")}
       />
     </View>

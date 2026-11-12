@@ -10,6 +10,8 @@ interface ExerciseFooterProps {
   onContinue: () => void;
   // Shown after a wrong or almost-right answer
   correctAnswer?: string;
+  // Replaces the title of the "almost" state
+  almostTitle?: string;
 }
 
 const TITLES: Record<AnswerStatus, string> = {
@@ -26,6 +28,7 @@ export function ExerciseFooter({
   onCheck,
   onContinue,
   correctAnswer,
+  almostTitle,
 }: ExerciseFooterProps) {
   if (status === null) {
     // Exercises without a Check step (matching) show nothing until solved
@@ -60,7 +63,7 @@ export function ExerciseFooter({
       <Text
         className={`font-poppins-bold text-lg ${isWrong ? "text-error" : "text-success"}`}
       >
-        {TITLES[status]}
+        {status === "almost" && almostTitle ? almostTitle : TITLES[status]}
       </Text>
       {correctAnswer !== undefined && status !== "correct" && (
         <Text className="body-md mt-1">

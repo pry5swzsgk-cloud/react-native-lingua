@@ -119,6 +119,7 @@ function buildWrite(ctx: BuildContext, id: string): WriteExerciseData {
 
 const MAX_TRANSLATE_WORDS = 6;
 const MAX_TRANSLATE_ANSWER_WORDS = 8;
+const MAX_TRANSLATE_JA_CHARS = 12;
 
 // A short sentence of the target language, the learner writes it in English.
 // It does not use takePhrase(), so the speaking exercises keep their sentences.
@@ -126,7 +127,9 @@ function buildTranslateSentence(ctx: BuildContext, id: string): WriteExerciseDat
   const fitting = ctx.phrases.filter(
     (p) =>
       sentenceTiles(p.text).length <= MAX_TRANSLATE_WORDS &&
-      sentenceTiles(p.translation).length <= MAX_TRANSLATE_ANSWER_WORDS,
+      sentenceTiles(p.translation).length <= MAX_TRANSLATE_ANSWER_WORDS &&
+      // Japanese has no spaces, so limit the length in characters instead
+      (!ctx.inEnglish || [...p.text.replace(/[\s。、！？!?.,]/g, "")].length <= MAX_TRANSLATE_JA_CHARS),
   );
   if (fitting.length === 0) return null;
   const phrase = fitting[Math.floor(ctx.random() * fitting.length)];
@@ -594,7 +597,6 @@ function buildCharacter(ctx: BuildContext, id: string): ChoiceExerciseData | nul
       id,
       instruction: "Which sound is this?",
       prompt: target.char,
-      audio: target.char,
       options: choices.map((c) => ({ label: c.romaji })),
       answer: target.romaji,
       layout: "list",
@@ -659,7 +661,7 @@ export const KINDS: KindSpec[] = [
   { kind: "speak-sentence", group: "speaking", easy: false, needsSpeech: true, build: buildSpeak },
   { kind: "speak-word", group: "speaking", easy: false, needsSpeech: true, build: buildSpeakWord },
   { kind: "speak-translate", group: "speaking", easy: false, needsSpeech: true, build: buildSpeakTranslate },
-  { kind: "dialog", group: "choosing", easy: true, needsSpeech: false, build: buildDialog },
+  { kind: "dialog", group: "choosing", easy: false, needsSpeech: false, build: buildDialog },
   { kind: "speak-answer", group: "speaking", easy: false, needsSpeech: true, build: buildSpeakAnswer },
   { kind: "word-bank", group: "building", easy: true, needsSpeech: false, build: buildWordBank },
   { kind: "order", group: "building", easy: false, needsSpeech: false, build: buildOrder },
@@ -667,6 +669,6 @@ export const KINDS: KindSpec[] = [
   { kind: "gap-choose", group: "choosing", easy: true, needsSpeech: false, build: buildGapChoose },
   { kind: "gap-type", group: "typing", easy: false, needsSpeech: false, build: buildGapType },
   { kind: "free-text", group: "typing", easy: false, needsSpeech: false, build: buildFreeText },
-  { kind: "character", group: "choosing", easy: true, needsSpeech: false, build: buildCharacter },
+  { kind: "character", group: "choosing", easy: false, needsSpeech: false, build: buildCharacter },
   { kind: "compose", group: "building", easy: false, needsSpeech: false, build: buildCompose },
 ];
