@@ -40,6 +40,10 @@ export function SpeakExercise({
   useEffect(() => () => stopRef.current?.(), []);
 
   const hasPassed = result?.passed === true;
+  // With hideText the sentence stays hidden until the first attempt
+  const showText = !exercise.hideText || result !== null;
+  const languageName =
+    LANGUAGES.find((l) => l.code === languageCode)?.name ?? "the language";
 
   function handleMicPress() {
     if (isListening) {
@@ -72,26 +76,42 @@ export function SpeakExercise({
   return (
     <View className="flex-1" testID="exercise-speak">
       <View className="flex-1 px-5">
-        <Text className="h3 mb-1">Say it out loud</Text>
+        <Text className="h3 mb-1">
+          {exercise.hideText
+            ? `Say this in ${languageName}`
+            : exercise.kind === "speak-word"
+              ? "Say this word"
+              : "Say it out loud"}
+        </Text>
         <Text className="body-sm text-text-secondary mb-5">
-          Listen first if you like, then tap the mic and speak.
+          {exercise.hideText
+            ? "Tap the mic and say it in your own words."
+            : "Listen first if you like, then tap the mic and speak."}
         </Text>
 
-        <View className="bg-surface rounded-2xl px-4 py-4 flex-row items-center mb-6">
-          <View className="flex-1 mr-3">
-            <Text
-              className="font-poppins-semibold text-lg text-text-primary"
-              testID="speak-text"
-            >
-              {exercise.text}
-            </Text>
-            <Text className="caption">{exercise.pronunciation}</Text>
-            <Text className="body-sm text-text-secondary mt-1">
+        {showText ? (
+          <View className="bg-surface rounded-2xl px-4 py-4 flex-row items-center mb-6">
+            <View className="flex-1 mr-3">
+              <Text
+                className="font-poppins-semibold text-lg text-text-primary"
+                testID="speak-text"
+              >
+                {exercise.text}
+              </Text>
+              <Text className="caption">{exercise.pronunciation}</Text>
+              <Text className="body-sm text-text-secondary mt-1">
+                {exercise.translation}
+              </Text>
+            </View>
+            <SpeakButton text={exercise.text} languageCode={languageCode} />
+          </View>
+        ) : (
+          <View className="bg-surface rounded-2xl px-5 py-6 items-center mb-6">
+            <Text className="h2 text-center" testID="speak-prompt">
               {exercise.translation}
             </Text>
           </View>
-          <SpeakButton text={exercise.text} languageCode={languageCode} />
-        </View>
+        )}
 
         {!hasPassed && (
           <View className="items-center">

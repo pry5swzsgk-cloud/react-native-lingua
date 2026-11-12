@@ -112,6 +112,30 @@ function buildWrite(ctx: BuildContext, id: string): WriteExerciseData {
       };
 }
 
+const MAX_TRANSLATE_WORDS = 6;
+const MAX_TRANSLATE_ANSWER_WORDS = 8;
+
+// A short sentence of the target language, the learner writes it in English.
+// It does not use takePhrase(), so the speaking exercises keep their sentences.
+function buildTranslateSentence(ctx: BuildContext, id: string): WriteExerciseData | null {
+  const fitting = ctx.phrases.filter(
+    (p) =>
+      sentenceTiles(p.text).length <= MAX_TRANSLATE_WORDS &&
+      sentenceTiles(p.translation).length <= MAX_TRANSLATE_ANSWER_WORDS,
+  );
+  if (fitting.length === 0) return null;
+  const phrase = fitting[Math.floor(ctx.random() * fitting.length)];
+  return {
+    type: "write",
+    kind: "translate-sentence",
+    id,
+    itemKey: phrase.text,
+    prompt: phrase.text,
+    answer: phrase.translation,
+    answerInEnglish: true,
+  };
+}
+
 function buildDictation(ctx: BuildContext, id: string): DictationExerciseData {
   // The first dictation is a short sentence (not for Japanese, where the
   // learner types the English meaning of a word)
@@ -150,6 +174,35 @@ function buildSpeak(ctx: BuildContext, id: string): SpeakExerciseData | null {
     text: phrase.text,
     pronunciation: phrase.pronunciation,
     translation: phrase.translation,
+  };
+}
+
+function buildSpeakWord(ctx: BuildContext, id: string): SpeakExerciseData {
+  const word = ctx.takeWord();
+  return {
+    type: "speak",
+    kind: "speak-word",
+    id,
+    itemKey: word.word,
+    text: word.word,
+    pronunciation: word.pronunciation,
+    translation: word.translation,
+  };
+}
+
+// The learner sees only the English meaning and says the sentence
+function buildSpeakTranslate(ctx: BuildContext, id: string): SpeakExerciseData | null {
+  const phrase = ctx.takePhrase();
+  if (!phrase) return null;
+  return {
+    type: "speak",
+    kind: "speak-translate",
+    id,
+    itemKey: phrase.text,
+    text: phrase.text,
+    pronunciation: phrase.pronunciation,
+    translation: phrase.translation,
+    hideText: true,
   };
 }
 
@@ -473,8 +526,11 @@ export const KINDS: KindSpec[] = [
   { kind: "audio-match", group: "listening", easy: false, needsSpeech: false, build: buildAudioMatch },
   { kind: "true-false", group: "choosing", easy: true, needsSpeech: false, build: buildTrueFalse },
   { kind: "write-word", group: "typing", easy: false, needsSpeech: false, build: buildWrite },
+  { kind: "translate-sentence", group: "typing", easy: false, needsSpeech: false, build: buildTranslateSentence },
   { kind: "dictation", group: "listening", easy: false, needsSpeech: false, build: buildDictation },
   { kind: "speak-sentence", group: "speaking", easy: false, needsSpeech: true, build: buildSpeak },
+  { kind: "speak-word", group: "speaking", easy: false, needsSpeech: true, build: buildSpeakWord },
+  { kind: "speak-translate", group: "speaking", easy: false, needsSpeech: true, build: buildSpeakTranslate },
   { kind: "word-bank", group: "building", easy: true, needsSpeech: false, build: buildWordBank },
   { kind: "order", group: "building", easy: false, needsSpeech: false, build: buildOrder },
   { kind: "tap-heard", group: "listening", easy: false, needsSpeech: false, build: buildTapHeard },
