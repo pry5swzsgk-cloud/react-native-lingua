@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { PhraseCard } from "@/components/PhraseCard";
 import { SpeakButton } from "@/components/SpeakButton";
 import { colors } from "@/constants/theme";
+import { BOSS_SESSION_SIZE } from "@/data/bosses";
 import { LESSONS } from "@/data/lessons";
 import { getUnitOfLesson } from "@/lib/progress";
 import { isSpeechRecognitionSupported } from "@/lib/speechRecognition";
@@ -47,8 +48,12 @@ export default function LessonScreen() {
   const isCompleted = completedLessonIds.includes(lesson.id);
   const languageCode = getUnitOfLesson(lesson)?.languageCode ?? null;
 
+  const boss = lesson.boss;
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.neutral.background }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.neutral.background }}
+    >
       {/* Header */}
       <View className="flex-row items-center px-5 pt-2 pb-3">
         <TouchableOpacity
@@ -75,57 +80,89 @@ export default function LessonScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Intro */}
-        <View className="items-center mb-6">
-          <Text className="text-5xl mb-2">{lesson.icon}</Text>
-          <Text className="body-md text-text-secondary text-center">
-            {lesson.description}
-          </Text>
-        </View>
-
-        {/* Vocabulary */}
-        <Text className="h4 mb-3">New words</Text>
-        <View
-          className="bg-white rounded-[20px] border border-border mb-6 overflow-hidden"
-          style={styles.cardShadow}
-        >
-          {lesson.vocabulary.map((item, index) => (
-            <View key={item.word}>
-              {index > 0 && <View className="h-px bg-border mx-4" />}
-              <View className="flex-row items-center px-4 py-3">
-                <Text className="text-2xl w-9">{item.emoji ?? "📝"}</Text>
-                <View className="flex-1 ml-2">
-                  <Text className="font-poppins-semibold text-sm text-text-primary">
-                    {item.word}
-                  </Text>
-                  <Text className="caption">{item.pronunciation}</Text>
-                </View>
-                <Text className="body-sm text-text-secondary mr-2">
-                  {item.translation}
-                </Text>
-                <SpeakButton text={item.word} languageCode={languageCode} />
-              </View>
+        {boss ? (
+          <View className="items-center pt-6" testID="boss-intro">
+            <Text className="text-7xl mb-3">{lesson.icon}</Text>
+            <Text className="h2 text-center mb-1">{lesson.title}</Text>
+            <Text className="body-md text-text-secondary text-center mb-6">
+              Review of {boss.sourceLessonIds.length} levels
+            </Text>
+            <View
+              className="bg-white rounded-[20px] border border-border p-5 gap-3 self-stretch mb-4"
+              style={styles.cardShadow}
+            >
+              <Text className="body-md text-text-primary">
+                {BOSS_SESSION_SIZE[boss.kind]} exercises
+              </Text>
+              <Text className="body-md text-text-primary">
+                Harder exercises, fewer hints
+              </Text>
+              <Text className="body-md text-text-primary">
+                Mistakes come back until you solve them. Nothing is locked.
+              </Text>
             </View>
-          ))}
-        </View>
+            <Text className="font-poppins-semibold text-base text-text-primary">
+              +{lesson.xpReward} XP
+            </Text>
+          </View>
+        ) : (
+          <>
+            {/* Intro */}
+            <View className="items-center mb-6">
+              <Text className="text-5xl mb-2">{lesson.icon}</Text>
+              <Text className="body-md text-text-secondary text-center">
+                {lesson.description}
+              </Text>
+            </View>
 
-        {/* Phrases */}
-        <Text className="h4 mb-1">Useful phrases</Text>
-        <Text className="body-sm text-text-secondary mb-3" testID="practice-hint">
-          {canPractice === false
-            ? "Tap the speaker to listen. Speaking practice isn't supported on this device or browser."
-            : "Tap the speaker to listen, then the mic to practice saying it."}
-        </Text>
-        <View className="gap-3">
-          {lesson.phrases.map((phrase) => (
-            <PhraseCard
-              key={phrase.text}
-              phrase={phrase}
-              languageCode={languageCode}
-              canPractice={canPractice === true}
-            />
-          ))}
-        </View>
+            {/* Vocabulary */}
+            <Text className="h4 mb-3">New words</Text>
+            <View
+              className="bg-white rounded-[20px] border border-border mb-6 overflow-hidden"
+              style={styles.cardShadow}
+            >
+              {lesson.vocabulary.map((item, index) => (
+                <View key={item.word}>
+                  {index > 0 && <View className="h-px bg-border mx-4" />}
+                  <View className="flex-row items-center px-4 py-3">
+                    <Text className="text-2xl w-9">{item.emoji ?? "📝"}</Text>
+                    <View className="flex-1 ml-2">
+                      <Text className="font-poppins-semibold text-sm text-text-primary">
+                        {item.word}
+                      </Text>
+                      <Text className="caption">{item.pronunciation}</Text>
+                    </View>
+                    <Text className="body-sm text-text-secondary mr-2">
+                      {item.translation}
+                    </Text>
+                    <SpeakButton text={item.word} languageCode={languageCode} />
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            {/* Phrases */}
+            <Text className="h4 mb-1">Useful phrases</Text>
+            <Text
+              className="body-sm text-text-secondary mb-3"
+              testID="practice-hint"
+            >
+              {canPractice === false
+                ? "Tap the speaker to listen. Speaking practice isn't supported on this device or browser."
+                : "Tap the speaker to listen, then the mic to practice saying it."}
+            </Text>
+            <View className="gap-3">
+              {lesson.phrases.map((phrase) => (
+                <PhraseCard
+                  key={phrase.text}
+                  phrase={phrase}
+                  languageCode={languageCode}
+                  canPractice={canPractice === true}
+                />
+              ))}
+            </View>
+          </>
+        )}
       </ScrollView>
 
       {/* Exercises button */}
@@ -137,9 +174,13 @@ export default function LessonScreen() {
           testID="start-exercises-button"
         >
           <Text className="font-poppins-semibold text-base text-white">
-            {isCompleted
-              ? "Practice again"
-              : `Start exercises · +${lesson.xpReward} XP`}
+            {boss
+              ? isCompleted
+                ? "Fight again"
+                : `Start the fight · +${lesson.xpReward} XP`
+              : isCompleted
+                ? "Practice again"
+                : `Start exercises · +${lesson.xpReward} XP`}
           </Text>
         </TouchableOpacity>
       </View>

@@ -17,6 +17,7 @@ const MASCOT_GAP = 6; // space between a level circle and the mascot
 const MIN_ROW_HEIGHT = 118; // smallest distance from one level to the next
 const MAX_ROW_HEIGHT = 160; // largest distance
 const UNIT_BANNER_HEIGHT = 96; // room for a unit banner
+const BOSS_EXTRA_GAP = 16; // extra space before and after a boss circle
 const TOP_PADDING = 8;
 const SIDE_PADDING = 6; // space between a title and the screen edge
 // Each step moves at least this share of the free width sideways, so the
@@ -44,7 +45,7 @@ function stableRandom(text: string): number {
 export interface MapNodeLayout {
   lesson: Lesson;
   unit: Unit;
-  levelNumber: number; // 1, 2, 3 … across the whole course
+  levelNumber: number; // 1, 2, 3 … across the whole course; 0 for a boss
   x: number; // center of the circle
   y: number;
 }
@@ -70,6 +71,7 @@ export function buildMapLayout(units: Unit[], width: number): MapLayout {
   const minX = LABEL_WIDTH / 2 + SIDE_PADDING;
   const maxX = Math.max(minX, width - LABEL_WIDTH / 2 - SIDE_PADDING);
   const range = maxX - minX;
+  let levelCount = 0; // bosses are not counted
   let share = 0.5; // the first level starts in the middle
 
   for (const unit of units) {
@@ -77,7 +79,7 @@ export function buildMapLayout(units: Unit[], width: number): MapLayout {
     unitLayouts.push({ unit, lessons, y });
     y += UNIT_BANNER_HEIGHT;
 
-    for (const lesson of lessons) {
+    for (const [index, lesson] of lessons.entries()) {
       if (nodes.length > 0) {
         // Roll a new sideways position, far enough from the previous one
         const roll = stableRandom(lesson.id);
@@ -92,13 +94,16 @@ export function buildMapLayout(units: Unit[], width: number): MapLayout {
       nodes.push({
         lesson,
         unit,
-        levelNumber: nodes.length + 1,
+        levelNumber: lesson.boss ? 0 : (levelCount += 1),
         x: Math.round(minX + share * range),
         y: y + NODE_SIZE / 2,
       });
+      // The bigger boss circle needs room before and after it
+      const nextIsBoss = lessons[index + 1]?.boss !== undefined;
       y +=
         MIN_ROW_HEIGHT +
-        stableRandom(lesson.id + "y") * (MAX_ROW_HEIGHT - MIN_ROW_HEIGHT);
+        stableRandom(lesson.id + "y") * (MAX_ROW_HEIGHT - MIN_ROW_HEIGHT) +
+        (lesson.boss || nextIsBoss ? BOSS_EXTRA_GAP : 0);
     }
   }
 
