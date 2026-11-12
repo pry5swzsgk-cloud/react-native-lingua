@@ -15,6 +15,7 @@ import { ListenExercise } from "@/components/exercises/ListenExercise";
 import { MatchExercise } from "@/components/exercises/MatchExercise";
 import { SpeakExercise } from "@/components/exercises/SpeakExercise";
 import { TypeExercise } from "@/components/exercises/TypeExercise";
+import { WordBankExercise } from "@/components/exercises/WordBankExercise";
 import { colors } from "@/constants/theme";
 import { Exercise, ExerciseResult } from "@/lib/exercises";
 import { stopSpeaking } from "@/lib/speech";
@@ -120,6 +121,13 @@ export function ExerciseSession({
           />
         ) : exercise.type === "choice" ? (
           <ChoiceExercise
+            key={position}
+            exercise={exercise}
+            languageCode={languageCode}
+            onDone={handleDone}
+          />
+        ) : exercise.type === "wordbank" ? (
+          <WordBankExercise
             key={position}
             exercise={exercise}
             languageCode={languageCode}

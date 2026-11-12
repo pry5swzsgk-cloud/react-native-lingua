@@ -7,6 +7,7 @@ import type {
   ListenExerciseData,
   MatchExerciseData,
   SpeakExerciseData,
+  WordBankExerciseData,
   WriteExerciseData,
 } from "@/lib/exercises";
 
@@ -279,6 +280,113 @@ function buildTrueFalse(ctx: BuildContext, id: string): ChoiceExerciseData {
   };
 }
 
+// Tiles are the words of a sentence without punctuation at their edges:
+// "¿Cómo estás?" -> ["Cómo", "estás"]. Empty parts are dropped.
+function sentenceTiles(text: string): string[] {
+  return text
+    .split(/\s+/)
+    .map((part) => part.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ""))
+    .filter((part) => part.length > 0);
+}
+
+// Up to `count` wrong tiles taken from the given texts. None may equal a
+// word of the answer (ignoring case) and all are different.
+function pickDistractors(texts: string[], answer: string[], count: number, random: () => number): string[] {
+  const taken = new Set(answer.map((tile) => tile.toLowerCase()));
+  const pool: string[] = [];
+  for (const tile of shuffle(texts.flatMap(sentenceTiles), random)) {
+    const key = tile.toLowerCase();
+    if (taken.has(key)) continue;
+    taken.add(key);
+    pool.push(tile);
+    if (pool.length === count) break;
+  }
+  return pool;
+}
+
+const sameOrder = (a: string[], b: string[]) => a.join(" ").toLowerCase() === b.join(" ").toLowerCase();
+
+function buildWordBank(ctx: BuildContext, id: string): WordBankExerciseData | null {
+  const phrase = ctx.takePhrase();
+  if (!phrase) return null;
+  const answer = sentenceTiles(phrase.translation);
+  if (answer.length < 2 || answer.length > 9) return null;
+  const others = [
+    ...ctx.phrases.filter((p) => p !== phrase).map((p) => p.translation),
+    ...ctx.words.map((v) => v.translation),
+  ];
+  const distractors = pickDistractors(others, answer, 3, ctx.random);
+  return {
+    type: "wordbank",
+    kind: "word-bank",
+    id,
+    itemKey: phrase.text,
+    instruction: "Translate this sentence",
+    prompt: phrase.text,
+    audio: phrase.text,
+    tiles: shuffle([...answer, ...distractors], ctx.random),
+    answer,
+    solution: phrase.translation,
+  };
+}
+
+// Takes sentences until one has a word count in range (null if none does)
+function takePhraseWithWords(ctx: BuildContext, min: number, max: number) {
+  for (let phrase = ctx.takePhrase(); phrase; phrase = ctx.takePhrase()) {
+    const answer = sentenceTiles(phrase.text);
+    if (answer.length >= min && answer.length <= max) return { phrase, answer };
+  }
+  return null;
+}
+
+function buildOrder(ctx: BuildContext, id: string): WordBankExerciseData | null {
+  if (ctx.inEnglish) return null;
+  const found = takePhraseWithWords(ctx, 3, 8);
+  if (!found) return null;
+  const { phrase, answer } = found;
+  // Shuffle until the order is wrong (impossible if all words are equal)
+  let tiles = shuffle(answer, ctx.random);
+  for (let tries = 0; tries < 20 && sameOrder(tiles, answer); tries++) {
+    tiles = shuffle(answer, ctx.random);
+  }
+  if (sameOrder(tiles, answer)) tiles = [...answer].reverse();
+  if (sameOrder(tiles, answer)) return null;
+  return {
+    type: "wordbank",
+    kind: "order",
+    id,
+    itemKey: phrase.text,
+    instruction: "Put the words in the right order",
+    prompt: phrase.translation,
+    tiles,
+    answer,
+    solution: phrase.text,
+  };
+}
+
+function buildTapHeard(ctx: BuildContext, id: string): WordBankExerciseData | null {
+  if (ctx.inEnglish) return null;
+  const found = takePhraseWithWords(ctx, 2, 8);
+  if (!found) return null;
+  const { phrase, answer } = found;
+  const others = [
+    ...ctx.phrases.filter((p) => p !== phrase).map((p) => p.text),
+    ...ctx.words.map((v) => v.word),
+  ];
+  const distractors = pickDistractors(others, answer, 3, ctx.random);
+  return {
+    type: "wordbank",
+    kind: "tap-heard",
+    id,
+    itemKey: phrase.text,
+    instruction: "Tap what you hear",
+    audio: phrase.text,
+    tiles: shuffle([...answer, ...distractors], ctx.random),
+    answer,
+    solution: phrase.text,
+  };
+}
+
 export const KINDS: KindSpec[] = [
   { kind: "match", group: "connect", easy: true, needsSpeech: false, build: buildMatch },
   { kind: "listen", group: "listening", easy: true, needsSpeech: false, build: buildListen },
@@ -289,4 +397,7 @@ export const KINDS: KindSpec[] = [
   { kind: "write-word", group: "typing", easy: false, needsSpeech: false, build: buildWrite },
   { kind: "dictation", group: "listening", easy: false, needsSpeech: false, build: buildDictation },
   { kind: "speak-sentence", group: "speaking", easy: false, needsSpeech: true, build: buildSpeak },
+  { kind: "word-bank", group: "building", easy: true, needsSpeech: false, build: buildWordBank },
+  { kind: "order", group: "building", easy: false, needsSpeech: false, build: buildOrder },
+  { kind: "tap-heard", group: "listening", easy: false, needsSpeech: false, build: buildTapHeard },
 ];
