@@ -28,13 +28,33 @@ export interface ChatEntry {
   message: ChatMessage;
 }
 
+// What the chat screen needs from a teacher. Both teachers (Dax with rules
+// and Smart Dax with a language model) provide it, so one screen shows both.
+export interface TeacherChatController {
+  entries: ChatEntry[];
+  hasStarted: boolean;
+  topicLabel: string | null;
+  autoSpeak: boolean;
+  isBusy: boolean; // Dax is still working on an answer
+  start: () => void;
+  send: (text: string, germanHelp: boolean) => void;
+  newTopic: () => void;
+  helpMe: () => void;
+  repeat: () => void;
+  toggleAutoSpeak: () => void;
+  // Smart Dax only
+  writingId?: number | null; // the message Dax is writing right now
+  translate?: (id: number) => void; // German translation of one message
+  translatingId?: number | null;
+}
+
 // Runs a conversation with Dax: keeps the chat history, asks the engine
 // (lib/teacher.ts) what Dax does next, reads his answers aloud and hands
 // out XP for finished topics.
 export function useTeacherChat(
   content: TeacherContent,
   preferredTheme: ThemeId | null,
-) {
+): TeacherChatController {
   const addXP = useLearningStore((state) => state.addXP);
   const [entries, setEntries] = useState<ChatEntry[]>([]);
   // null until the learner taps "Start talking"
@@ -108,6 +128,7 @@ export function useTeacherChat(
 
   return {
     entries,
+    isBusy: false,
     hasStarted: teacherState !== null,
     topicLabel: teacherState ? getTopicLabel(content, teacherState) : null,
     autoSpeak,
