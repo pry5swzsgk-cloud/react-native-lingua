@@ -29,7 +29,6 @@ interface MapNodeProps {
 }
 
 const NODE_WIDTH = LABEL_WIDTH;
-const BOSS_BACKGROUND = "#2B2440";
 const FINAL_BOSS_RING = "#F5A300";
 
 // One level on the map. Every level can be tapped at any time.
@@ -86,11 +85,10 @@ export function MapNode({
       >
         <BossPulse enabled={bossKind === "final"}>
           <View
-            className={`rounded-full items-center justify-center ${bossKind ? "" : "bg-white"}`}
+            className={`rounded-full items-center justify-center ${bossKind ? "bg-[#2B2440]" : "bg-white"}`}
             style={[
               styles.circle,
               { width: size, height: size, borderColor: ringColor },
-              bossKind ? { backgroundColor: BOSS_BACKGROUND } : null,
             ]}
           >
             <Text className={bossKind ? "text-4xl" : "text-3xl"}>

@@ -138,7 +138,7 @@ export default function LearnScreen() {
               </Text>
               <Text className="caption">
                 Unit {currentNode.unit.order} · {currentUnitDone}/
-                {currentUnit?.lessons.length ?? 0} lessons
+                {currentUnit?.lessons.length ?? 0} levels
               </Text>
             </View>
 
