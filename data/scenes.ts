@@ -1,5 +1,7 @@
 import { Scene, SceneKind } from "@/types/scenes";
 import { LanguageCode } from "@/types/learning";
+import { ADVENTURES } from "@/data/scenes-adventures";
+import { RADIO_EPISODES } from "@/data/scenes-radio";
 
 // Short stories in Spanish. Lines are read aloud; questions are in English.
 const STORIES: Scene[] = [
@@ -125,8 +127,8 @@ const STORIES: Scene[] = [
   },
 ];
 
-// More kinds (radio, adventures, roleplay) are added to this list later
-export const SCENES: Scene[] = [...STORIES];
+// More kinds (roleplay) are added to this list later
+export const SCENES: Scene[] = [...STORIES, ...RADIO_EPISODES, ...ADVENTURES];
 
 export const SCENE_KINDS: {
   kind: SceneKind;

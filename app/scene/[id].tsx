@@ -41,14 +41,32 @@ function LineBubble({
   translation,
   languageCode,
   mine = false,
+  hideText = false,
 }: {
   speaker: string;
   text: string;
   translation: string;
   languageCode: LanguageCode;
   mine?: boolean;
+  hideText?: boolean; // radio: only play the audio, no text yet
 }) {
   const [showTranslation, setShowTranslation] = useState(false);
+  if (hideText) {
+    return (
+      <View
+        className="rounded-2xl px-4 py-3 mb-3 max-w-[88%] self-start bg-surface border border-border"
+        testID="scene-line-hidden"
+      >
+        <Text className="font-poppins-semibold text-xs text-lingua-purple">
+          {`🎧 ${speaker} is speaking…`}
+        </Text>
+        <View className="flex-row items-center gap-2 mt-2">
+          <SpeakButton text={text} languageCode={languageCode} />
+          <SpeakButton text={text} languageCode={languageCode} slow />
+        </View>
+      </View>
+    );
+  }
   return (
     <View
       className={`rounded-2xl px-4 py-3 mb-3 max-w-[88%] ${mine ? "self-end bg-[#EDE9FE]" : "self-start bg-surface border border-border"}`}
@@ -90,6 +108,7 @@ export default function SceneScreen() {
   const [answers, setAnswers] = useState<Record<number, Answer>>({});
   const [xp, setXp] = useState<number | null>(null);
   const [round, setRound] = useState(0);
+  const [showTranscript, setShowTranscript] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   // Read a new line aloud once when it appears
@@ -147,6 +166,10 @@ export default function SceneScreen() {
   const isOpen =
     (current.type === "question" || current.type === "reply") &&
     !answers[shown - 1]?.right;
+  // Radio: text stays hidden until the learner asks for the transcript
+  const isRadio = scene.kind === "radio";
+  const canShowTranscript =
+    isRadio && !showTranscript && shown === total && !isOpen;
 
   function handleChoose(index: number, option: string, answer: string) {
     if (option === answer) {
@@ -189,6 +212,7 @@ export default function SceneScreen() {
     setAnswers({});
     setShown(1);
     setXp(null);
+    setShowTranscript(false);
     setRound((value) => value + 1);
   }
 
@@ -306,6 +330,7 @@ export default function SceneScreen() {
             text={step.text}
             translation={step.translation}
             languageCode={scene.languageCode}
+            hideText={isRadio && !showTranscript}
           />
         );
       case "question":
@@ -397,7 +422,19 @@ export default function SceneScreen() {
         {scene.steps.slice(0, shown).map((_, index) => renderStep(index))}
       </ScrollView>
 
-      <View className="px-5 pt-3 pb-4">
+      <View className="px-5 pt-3 pb-4 gap-3">
+        {canShowTranscript && (
+          <TouchableOpacity
+            className="rounded-2xl items-center py-4 border border-border"
+            activeOpacity={0.85}
+            onPress={() => setShowTranscript(true)}
+            testID="scene-transcript-button"
+          >
+            <Text className="font-poppins-semibold text-base text-text-primary">
+              Show transcript
+            </Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           className={`rounded-2xl items-center py-4 ${isOpen ? "bg-border" : "bg-lingua-purple"}`}
           activeOpacity={0.85}
