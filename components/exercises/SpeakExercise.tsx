@@ -12,7 +12,20 @@ import { comparePronunciation, PronunciationResult } from "@/lib/pronunciation";
 import { playSound } from "@/lib/sounds";
 import { stopSpeaking } from "@/lib/speech";
 import { listenOnce } from "@/lib/speechRecognition";
+import { normalizeText, stripAccents } from "@/lib/teacherText";
 import { LanguageCode } from "@/types/learning";
+
+// Lowercase, no accents, no punctuation
+const plain = (text: string) => stripAccents(normalizeText(text));
+
+// Right when the heard text contains a keyword (keywords may be word stems)
+function hasKeyword(heard: string, keywords: string[]): boolean {
+  const text = plain(heard);
+  return keywords.some((keyword) => {
+    const key = plain(keyword);
+    return key !== "" && text.includes(key);
+  });
+}
 
 interface SpeakExerciseProps {
   exercise: SpeakExerciseData;
@@ -42,8 +55,16 @@ export function SpeakExercise({
   const hasPassed = result?.passed === true;
   // With hideText the sentence stays hidden until the first attempt
   const showText = !exercise.hideText || result !== null;
+  // Question exercises: the learner answers in their own words
+  const question = exercise.question;
   const languageName =
     LANGUAGES.find((l) => l.code === languageCode)?.name ?? "the language";
+
+  // For a question the score is only "has a keyword" or not
+  function answerResult(transcript: string): PronunciationResult {
+    const passed = hasKeyword(transcript, exercise.keywords ?? []);
+    return { words: [], score: passed ? 1 : 0, passed };
+  }
 
   function handleMicPress() {
     if (isListening) {
@@ -63,7 +84,9 @@ export function SpeakExercise({
     stopRef.current = listenOnce(locale, {
       onPartial: setLiveText,
       onResult: (transcript) => {
-        const comparison = comparePronunciation(exercise.text, transcript);
+        const comparison = question
+          ? answerResult(transcript)
+          : comparePronunciation(exercise.text, transcript);
         playSound(comparison.passed ? "correct" : "wrong");
         setHeard(transcript);
         setResult(comparison);
@@ -77,19 +100,38 @@ export function SpeakExercise({
     <View className="flex-1" testID="exercise-speak">
       <View className="flex-1 px-5">
         <Text className="h3 mb-1">
-          {exercise.hideText
+          {question
+            ? "Answer the question out loud"
+            : exercise.hideText
             ? `Say this in ${languageName}`
             : exercise.kind === "speak-word"
               ? "Say this word"
               : "Say it out loud"}
         </Text>
         <Text className="body-sm text-text-secondary mb-5">
-          {exercise.hideText
+          {question
+            ? "Tap the mic and answer in your own words."
+            : exercise.hideText
             ? "Tap the mic and say it in your own words."
             : "Listen first if you like, then tap the mic and speak."}
         </Text>
 
-        {showText ? (
+        {question ? (
+          <View className="bg-surface rounded-2xl px-4 py-4 flex-row items-center mb-6">
+            <View className="flex-1 mr-3">
+              <Text
+                className="font-poppins-semibold text-lg text-text-primary"
+                testID="speak-question"
+              >
+                {question}
+              </Text>
+              <Text className="body-sm text-text-secondary mt-1">
+                {exercise.translation}
+              </Text>
+            </View>
+            <SpeakButton text={question} languageCode={languageCode} />
+          </View>
+        ) : showText ? (
           <View className="bg-surface rounded-2xl px-4 py-4 flex-row items-center mb-6">
             <View className="flex-1 mr-3">
               <Text
@@ -146,7 +188,26 @@ export function SpeakExercise({
           <Text className="body-sm text-error text-center mt-4">{error}</Text>
         )}
 
-        {result && !isListening && (
+        {result && !isListening && question && (
+          <View className="mt-5" testID="speech-result">
+            <Text className="body-sm text-text-secondary">
+              I heard: “{heard}”
+            </Text>
+            {result.passed && (
+              <Text className="font-poppins-semibold text-sm text-success mt-1">
+                Great answer!
+              </Text>
+            )}
+            <View className="bg-surface rounded-2xl px-4 py-3 flex-row items-center mt-3">
+              <Text className="flex-1 mr-3 body-md text-text-primary" testID="speak-example">
+                Example: {exercise.text}
+              </Text>
+              <SpeakButton text={exercise.text} languageCode={languageCode} />
+            </View>
+          </View>
+        )}
+
+        {result && !isListening && !question && (
           <View className="mt-5" testID="speech-result">
             <PronunciationFeedback
               sentence={exercise.text}

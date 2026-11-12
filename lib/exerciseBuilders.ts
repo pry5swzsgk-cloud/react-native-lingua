@@ -1,4 +1,4 @@
-import type { LanguageCode, Phrase, VocabularyItem } from "@/types/learning";
+import type { DialogItem, LanguageCode, Phrase, VocabularyItem } from "@/types/learning";
 import type {
   ChoiceExerciseData,
   DictationExerciseData,
@@ -33,6 +33,9 @@ export interface BuildContext {
   // The short sentence (or expression) for the first dictation, given out
   // only once, null when there is none or it was already used
   takeLongDictation: () => string | null;
+  dialogs: DialogItem[]; // shuffled
+  // Next dialog entry. Each one is given out only once, null when none is left
+  takeDialog: () => DialogItem | null;
 }
 
 export interface KindSpec {
@@ -203,6 +206,39 @@ function buildSpeakTranslate(ctx: BuildContext, id: string): SpeakExerciseData |
     pronunciation: phrase.pronunciation,
     translation: phrase.translation,
     hideText: true,
+  };
+}
+
+// Dax asks a question, the learner picks the best reply
+function buildDialog(ctx: BuildContext, id: string): ChoiceExerciseData | null {
+  const dialog = ctx.takeDialog();
+  if (!dialog) return null;
+  return {
+    type: "choice",
+    kind: "dialog",
+    id,
+    instruction: "Choose the best reply",
+    audio: dialog.question,
+    context: [{ speaker: "Dax", text: dialog.question }],
+    options: shuffle([dialog.reply, ...dialog.wrongReplies], ctx.random).map((label) => ({ label })),
+    answer: dialog.reply,
+    layout: "list",
+  };
+}
+
+// The learner answers a question out loud; the reply is only an example
+function buildSpeakAnswer(ctx: BuildContext, id: string): SpeakExerciseData | null {
+  const dialog = ctx.takeDialog();
+  if (!dialog) return null;
+  return {
+    type: "speak",
+    kind: "speak-answer",
+    id,
+    text: dialog.reply,
+    pronunciation: "",
+    translation: dialog.questionTranslation,
+    question: dialog.question,
+    keywords: dialog.keywords,
   };
 }
 
@@ -531,6 +567,8 @@ export const KINDS: KindSpec[] = [
   { kind: "speak-sentence", group: "speaking", easy: false, needsSpeech: true, build: buildSpeak },
   { kind: "speak-word", group: "speaking", easy: false, needsSpeech: true, build: buildSpeakWord },
   { kind: "speak-translate", group: "speaking", easy: false, needsSpeech: true, build: buildSpeakTranslate },
+  { kind: "dialog", group: "choosing", easy: true, needsSpeech: false, build: buildDialog },
+  { kind: "speak-answer", group: "speaking", easy: false, needsSpeech: true, build: buildSpeakAnswer },
   { kind: "word-bank", group: "building", easy: true, needsSpeech: false, build: buildWordBank },
   { kind: "order", group: "building", easy: false, needsSpeech: false, build: buildOrder },
   { kind: "tap-heard", group: "listening", easy: false, needsSpeech: false, build: buildTapHeard },

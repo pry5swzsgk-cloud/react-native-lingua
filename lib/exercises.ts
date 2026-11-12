@@ -1,6 +1,8 @@
 import { KINDS, shuffle } from "@/lib/exerciseBuilders";
 import type { BuildContext, ExerciseGroup, KindSpec } from "@/lib/exerciseBuilders";
-import { LanguageCode, Lesson, Phrase, VocabularyItem } from "@/types/learning";
+import { getDialogs } from "@/data/dialogs";
+import { getUnitOfLesson } from "@/lib/progress";
+import { DialogItem, LanguageCode, Lesson, Phrase, VocabularyItem } from "@/types/learning";
 
 // Every exercise has a `type` (which component shows it) and a `kind`
 // (the exact format). Some examples:
@@ -159,6 +161,7 @@ export interface ExerciseSource {
   id: string;
   vocabulary: VocabularyItem[];
   phrases: Phrase[];
+  dialogs?: DialogItem[]; // question and reply pairs (Spanish only)
 }
 
 export interface SessionOptions {
@@ -269,8 +272,10 @@ function buildSessionOnce(
   let longDictation = shortSentence?.text ?? shortExpression?.word ?? null;
   // Speaking exercises use the other sentences first
   const speakPhrases = [...phrases.filter((p) => p !== shortSentence), ...(shortSentence ? [shortSentence] : [])];
+  const dialogs = shuffle(source.dialogs ?? [], random);
   let nextWord = 0;
   let nextPhrase = 0;
+  let nextDialog = 0;
 
   const context: BuildContext = {
     languageCode,
@@ -281,6 +286,8 @@ function buildSessionOnce(
     phrases,
     takeWord: () => words[nextWord++ % words.length],
     takePhrase: () => speakPhrases[nextPhrase++] ?? null,
+    dialogs,
+    takeDialog: () => dialogs[nextDialog++] ?? null,
     takeLongDictation: () => {
       const text = longDictation;
       longDictation = null;
@@ -338,8 +345,14 @@ export function buildExercises(
   canSpeak: boolean,
   random: () => number = Math.random,
 ): Exercise[] {
+  const level = getUnitOfLesson(lesson)?.level;
   return buildSession(
-    { id: lesson.id, vocabulary: lesson.vocabulary, phrases: lesson.phrases },
+    {
+      id: lesson.id,
+      vocabulary: lesson.vocabulary,
+      phrases: lesson.phrases,
+      dialogs: level ? getDialogs(languageCode, level) : [],
+    },
     languageCode,
     { canSpeak, random },
   );
