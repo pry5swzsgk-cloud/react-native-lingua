@@ -124,14 +124,14 @@ export function ExerciseSession({
             languageCode={languageCode}
             onDone={handleDone}
           />
-        ) : (
+        ) : exercise.type === "write" || exercise.type === "dictation" ? (
           <TypeExercise
             key={position}
             exercise={exercise}
             languageCode={languageCode}
             onDone={handleDone}
           />
-        )}
+        ) : null}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
