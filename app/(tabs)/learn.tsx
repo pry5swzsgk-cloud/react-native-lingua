@@ -13,23 +13,26 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { MapLine } from "@/components/map/MapLine";
+import { MapMascot } from "@/components/map/MapMascot";
 import { MapNode } from "@/components/map/MapNode";
 import { ThemeBackground } from "@/components/map/ThemeBackground";
 import { colors } from "@/constants/theme";
+import { getMascot } from "@/data/mascots";
 import { THEMES } from "@/data/themes";
-import { buildMapLayout, MAX_MAP_WIDTH } from "@/lib/mapLayout";
+import { buildMapLayout, getMascotSpot, MAX_MAP_WIDTH } from "@/lib/mapLayout";
 import { getNextLesson, getUnits } from "@/lib/progress";
 import { useLanguageStore, useStartUnitOrder } from "@/store/languageStore";
 import { useLearningHydrated, useLearningStore } from "@/store/learningStore";
 
 // The progress map: every lesson is a level on a winding path. Finishing a
-// level sends a line running to the next one, and the background shows the
-// theme of the level the learner is on. All levels can be opened anytime.
+// level sends a line running to the next one, the learner's mascot walks
+// along, and the background shows the theme of the level the learner is on.
+// All levels can be opened anytime.
 export default function LearnScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { selectedLanguage } = useLanguageStore();
-  const { completedLessonIds } = useLearningStore();
+  const { completedLessonIds, selectedMascotId } = useLearningStore();
   const startUnitOrder = useStartUnitOrder();
   const isHydrated = useLearningHydrated();
   const scrollRef = useRef<ScrollView>(null);
@@ -91,6 +94,8 @@ export default function LearnScreen() {
   );
   const currentUnitDone =
     currentUnit?.lessons.filter((l) => completed.includes(l.id)).length ?? 0;
+  // The mascot stands next to the level the learner is on
+  const mascotSpot = getMascotSpot(currentNode, mapWidth);
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
@@ -220,11 +225,18 @@ export default function LearnScreen() {
                         : "open"
                   }
                   accent={THEMES[node.lesson.theme].accent}
-                  // Dax stands on the side with more room
-                  mascotSide={node.x > mapWidth / 2 ? "left" : "right"}
                   onPress={() => router.push(`/lesson/${node.lesson.id}`)}
                 />
               ))}
+
+              {/* The mascot picked in the profile. A new language starts
+                  with a new mascot, so it does not walk across the map. */}
+              <MapMascot
+                key={selectedLanguage}
+                mascot={getMascot(selectedMascotId)}
+                x={mascotSpot.x}
+                y={mascotSpot.y}
+              />
             </View>
           </ScrollView>
         )}

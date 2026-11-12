@@ -18,6 +18,8 @@ The app teaches users languages through interactive lessons that may include:
 - an offline conversation tutor
 - vocabulary review
 - local XP, streaks, daily goals and lesson completion
+- reward chests and collectible mascots (cosmetic only, earned by learning;
+  they never lock lessons or features)
 - language selection
 - beautiful mobile-first UI inspired by playful learning apps
 

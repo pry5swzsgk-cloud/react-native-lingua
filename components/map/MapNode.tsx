@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect } from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -12,7 +12,6 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { LINE_DURATION } from "@/components/map/MapLine";
-import { images } from "@/constants/images";
 import { colors } from "@/constants/theme";
 import { LABEL_WIDTH, NODE_SIZE } from "@/lib/mapLayout";
 import { Lesson } from "@/types/learning";
@@ -26,7 +25,6 @@ interface MapNodeProps {
   y: number;
   status: MapNodeStatus;
   accent: string; // color of the lesson's theme
-  mascotSide: "left" | "right";
   onPress: () => void;
 }
 
@@ -34,7 +32,8 @@ const NODE_WIDTH = LABEL_WIDTH;
 
 // One level on the map. Every level can be tapped at any time.
 //   done    - colored ring with a check mark
-//   current - purple ring that pulses, with Dax standing next to it
+//   current - purple ring that pulses (the mascot stands next to it,
+//             see MapMascot)
 //   open    - plain ring
 export function MapNode({
   lesson,
@@ -43,7 +42,6 @@ export function MapNode({
   y,
   status,
   accent,
-  mascotSide,
   onPress,
 }: MapNodeProps) {
   const ringColor =
@@ -57,7 +55,7 @@ export function MapNode({
     <View
       style={[styles.container, { left: x - NODE_WIDTH / 2, top: y - NODE_SIZE / 2 }]}
     >
-      {status === "current" && <CurrentMarker side={mascotSide} />}
+      {status === "current" && <CurrentPulse />}
 
       <TouchableOpacity
         className="items-center"
@@ -94,12 +92,11 @@ export function MapNode({
   );
 }
 
-// Decoration of the level the learner is on: a pulsing ring and Dax.
-// It pops in after the line from the previous level has arrived.
-function CurrentMarker({ side }: { side: "left" | "right" }) {
+// The pulsing ring around the level the learner is on. It appears when
+// the line from the previous level has arrived.
+function CurrentPulse() {
   const pulse = useSharedValue(0); // 0 → 1, repeats
   const appear = useSharedValue(0); // 0 = hidden, 1 = shown
-  const bounce = useSharedValue(0); // 0 ↔ 1, Dax hops
 
   useEffect(() => {
     pulse.set(
@@ -109,44 +106,14 @@ function CurrentMarker({ side }: { side: "left" | "right" }) {
       ),
     );
     appear.set(withDelay(LINE_DURATION - 200, withSpring(1)));
-    bounce.set(
-      withRepeat(
-        withTiming(1, { duration: 700, easing: Easing.inOut(Easing.quad) }),
-        -1,
-        true,
-      ),
-    );
-  }, [pulse, appear, bounce]);
+  }, [pulse, appear]);
 
   const pulseStyle = useAnimatedStyle(() => ({
     opacity: 0.55 * (1 - pulse.get()) * appear.get(),
     transform: [{ scale: 1 + 0.45 * pulse.get() }],
   }));
 
-  const mascotStyle = useAnimatedStyle(() => ({
-    opacity: appear.get(),
-    transform: [{ scale: appear.get() }, { translateY: -6 * bounce.get() }],
-  }));
-
-  return (
-    <>
-      <Animated.View style={[styles.pulse, pulseStyle]} />
-      <Animated.View
-        style={[
-          styles.mascot,
-          side === "left" ? styles.mascotLeft : styles.mascotRight,
-          mascotStyle,
-        ]}
-        testID="map-mascot"
-      >
-        <Image
-          source={images.mascotDino}
-          style={styles.mascotImage}
-          resizeMode="contain"
-        />
-      </Animated.View>
-    </>
-  );
+  return <Animated.View style={[styles.pulse, pulseStyle]} />;
 }
 
 // Positions, animated values and transforms stay in StyleSheet (see AGENTS.md)
@@ -175,12 +142,4 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary.purple,
     pointerEvents: "none",
   },
-  mascot: {
-    position: "absolute",
-    top: 6,
-    pointerEvents: "none",
-  },
-  mascotLeft: { left: (NODE_WIDTH - NODE_SIZE) / 2 - 62 },
-  mascotRight: { left: (NODE_WIDTH + NODE_SIZE) / 2 + 6 },
-  mascotImage: { width: 56, height: 56 },
 });
