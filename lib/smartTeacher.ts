@@ -16,12 +16,13 @@ const MAX_HISTORY_TURNS = 10;
 const MAX_HISTORY_CHARS = 1200;
 const MAX_LEARNER_CHARS = 300; // a very long message is cut
 
-export type Level = "A1" | "A2" | "B1";
+export type Level = "A1" | "A2" | "B1" | "B2";
 
 const LEVEL_RULES: Record<Level, string> = {
   A1: "Use only very simple words and short present-tense sentences.",
   A2: "Use simple everyday words and short sentences.",
   B1: "Use natural everyday language with clear sentences.",
+  B2: "Use natural language with a richer vocabulary. Longer sentences are fine.",
 };
 
 // One turn of the chat as the model remembers it

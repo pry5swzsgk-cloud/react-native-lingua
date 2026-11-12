@@ -13,6 +13,7 @@ const LEVEL_LABELS: Record<UnitLevel, string> = {
   A1: "I'm just starting",
   A2: "I know the basics",
   B1: "I can have simple conversations",
+  B2: "I can talk about most topics",
 };
 
 // Lets the learner pick a starting point so they can skip what they know.
@@ -23,7 +24,10 @@ export default function LevelSelectScreen() {
   const [selectedOrder, setSelectedOrder] = useState(savedOrder);
 
   const language = LANGUAGES.find((l) => l.code === selectedLanguage);
-  const units = getUnits(selectedLanguage);
+  // One choice per level: the first unit of each level is where it starts
+  const units = getUnits(selectedLanguage).filter(
+    (unit, index, all) => index === 0 || all[index - 1].level !== unit.level,
+  );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
