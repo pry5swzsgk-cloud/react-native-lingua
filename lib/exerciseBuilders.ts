@@ -1,3 +1,4 @@
+import { getCharacters, HIRAGANA } from "@/data/characters";
 import type { DialogItem, LanguageCode, Phrase, VocabularyItem } from "@/types/learning";
 import type {
   ChoiceExerciseData,
@@ -571,6 +572,80 @@ function buildGap(ctx: BuildContext, id: string, type: boolean): GapExerciseData
 const buildGapChoose = (ctx: BuildContext, id: string) => buildGap(ctx, id, false);
 const buildGapType = (ctx: BuildContext, id: string) => buildGap(ctx, id, true);
 
+// Japanese only: which sound is this character, or which character is this sound
+function buildCharacter(ctx: BuildContext, id: string): ChoiceExerciseData | null {
+  if (ctx.languageCode !== "ja") return null;
+  const all = getCharacters(ctx.languageCode);
+  // Prefer characters that appear in the words of this source
+  const text = ctx.words.map((v) => v.word).join("");
+  const seen = all.filter((c) => text.includes(c.char));
+  const pool = seen.length > 0 ? seen : all;
+  const target = pool[Math.floor(ctx.random() * pool.length)];
+  // Every romaji is unique, so different characters never share a sound
+  const others = shuffle(
+    all.filter((c) => c.char !== target.char),
+    ctx.random,
+  ).slice(0, 3);
+  const choices = shuffle([target, ...others], ctx.random);
+  if (ctx.random() < 0.5) {
+    return {
+      type: "choice",
+      kind: "character",
+      id,
+      instruction: "Which sound is this?",
+      prompt: target.char,
+      audio: target.char,
+      options: choices.map((c) => ({ label: c.romaji })),
+      answer: target.romaji,
+      layout: "list",
+    };
+  }
+  return {
+    type: "choice",
+    kind: "character",
+    id,
+    instruction: "Which character is this?",
+    prompt: target.romaji,
+    options: choices.map((c) => ({ label: c.char })),
+    answer: target.char,
+    layout: "grid",
+  };
+}
+
+const HIRAGANA_CHARS = new Set(HIRAGANA.map((c) => c.char));
+
+// The word without spaces and punctuation, or null if it is not only Hiragana
+function pureHiragana(word: string): string[] | null {
+  const chars = [...word.replace(/[\s。、！？!?.,]/g, "")];
+  if (chars.length < 2 || chars.length > 8) return null;
+  return chars.every((c) => HIRAGANA_CHARS.has(c)) ? chars : null;
+}
+
+// Japanese only: build a word from Hiragana tiles
+function buildCompose(ctx: BuildContext, id: string): WordBankExerciseData | null {
+  if (ctx.languageCode !== "ja") return null;
+  const fitting = ctx.words.filter((v) => pureHiragana(v.word) !== null);
+  if (fitting.length === 0) return null;
+  const word = fitting[Math.floor(ctx.random() * fitting.length)];
+  const answer = pureHiragana(word.word) ?? [];
+  const extra = shuffle(
+    HIRAGANA.map((c) => c.char).filter((c) => !answer.includes(c)),
+    ctx.random,
+  ).slice(0, 3);
+  return {
+    type: "wordbank",
+    kind: "compose",
+    id,
+    itemKey: word.word,
+    instruction: "Build the word",
+    prompt: `${word.translation} (${word.pronunciation})`,
+    audio: word.word,
+    tiles: shuffle([...answer, ...extra], ctx.random),
+    answer,
+    solution: word.word,
+  };
+}
+
 export const KINDS: KindSpec[] = [
   { kind: "match", group: "connect", easy: true, needsSpeech: false, build: buildMatch },
   { kind: "listen", group: "listening", easy: true, needsSpeech: false, build: buildListen },
@@ -592,4 +667,6 @@ export const KINDS: KindSpec[] = [
   { kind: "gap-choose", group: "choosing", easy: true, needsSpeech: false, build: buildGapChoose },
   { kind: "gap-type", group: "typing", easy: false, needsSpeech: false, build: buildGapType },
   { kind: "free-text", group: "typing", easy: false, needsSpeech: false, build: buildFreeText },
+  { kind: "character", group: "choosing", easy: true, needsSpeech: false, build: buildCharacter },
+  { kind: "compose", group: "building", easy: false, needsSpeech: false, build: buildCompose },
 ];

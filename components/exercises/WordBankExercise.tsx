@@ -26,8 +26,10 @@ export function WordBankExercise({
   const [picked, setPicked] = useState<number[]>([]); // indexes into tiles
   const [isChecked, setIsChecked] = useState(false);
 
-  const given = picked.map((index) => exercise.tiles[index]).join(" ").toLowerCase();
-  const isCorrect = given === exercise.answer.join(" ").toLowerCase();
+  // Japanese words (compose) have no spaces between characters
+  const joiner = exercise.kind === "compose" ? "" : " ";
+  const given = picked.map((index) => exercise.tiles[index]).join(joiner).toLowerCase();
+  const isCorrect = given === exercise.answer.join(joiner).toLowerCase();
   // order and tap-heard solutions are in the target language
   const solutionIsSpoken = exercise.kind === "order" || exercise.kind === "tap-heard";
 
