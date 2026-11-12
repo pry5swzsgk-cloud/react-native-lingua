@@ -231,6 +231,21 @@ export function buildSession(
   languageCode: LanguageCode | null,
   options: SessionOptions,
 ): Exercise[] {
+  // If nothing fits, relax the options: first "hard", then "only".
+  // The result is empty only when the source has no words at all.
+  const attempts: SessionOptions[] = [options, { ...options, hard: false }, { ...options, hard: false, only: undefined }];
+  for (const attempt of attempts) {
+    const exercises = buildSessionOnce(source, languageCode, attempt);
+    if (exercises.length > 0) return exercises;
+  }
+  return [];
+}
+
+function buildSessionOnce(
+  source: ExerciseSource,
+  languageCode: LanguageCode | null,
+  options: SessionOptions,
+): Exercise[] {
   const random = options.random ?? Math.random;
   const words = shuffle(source.vocabulary, random);
   const phrases = shuffle(source.phrases, random);

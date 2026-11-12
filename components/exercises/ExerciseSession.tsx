@@ -83,12 +83,13 @@ export function ExerciseSession({
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         {/* Header: close button and progress */}
-        <View className="flex-row items-center gap-3 px-5 pt-2 pb-5">
+        {/* (hidden when empty: the hint below has its own close button) */}
+        <View className={`flex-row items-center gap-3 px-5 pt-2 pb-5 ${total === 0 ? "hidden" : ""}`}>
           <TouchableOpacity
             onPress={onClose}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityLabel="Close exercises"
-            testID="practice-close-button"
+            testID={total === 0 ? undefined : "practice-close-button"}
           >
             <Ionicons
               name="close"
@@ -107,7 +108,22 @@ export function ExerciseSession({
           </Text>
         </View>
 
-        {!exercise ? (
+        {total === 0 ? (
+          <View className="flex-1 items-center justify-center px-8 gap-6" testID="session-empty">
+            <Text className="h3 text-center">Nothing to practise here yet</Text>
+            <Text className="body-md text-center">
+              There is no content for this practice yet. Try another one.
+            </Text>
+            <TouchableOpacity
+              onPress={onClose}
+              className="rounded-2xl items-center py-4 px-10 bg-lingua-purple"
+              accessibilityLabel="Close"
+              testID="practice-close-button"
+            >
+              <Text className="font-poppins-semibold text-base text-white">Close</Text>
+            </TouchableOpacity>
+          </View>
+        ) : !exercise ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" color={colors.primary.purple} />
           </View>

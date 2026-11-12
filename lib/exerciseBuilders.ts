@@ -308,10 +308,13 @@ function pickDistractors(texts: string[], answer: string[], count: number, rando
 const sameOrder = (a: string[], b: string[]) => a.join(" ").toLowerCase() === b.join(" ").toLowerCase();
 
 function buildWordBank(ctx: BuildContext, id: string): WordBankExerciseData | null {
-  const phrase = ctx.takePhrase();
-  if (!phrase) return null;
+  const fitting = ctx.phrases.filter((p) => {
+    const count = sentenceTiles(p.translation).length;
+    return count >= 2 && count <= 9;
+  });
+  if (fitting.length === 0) return null;
+  const phrase = fitting[Math.floor(ctx.random() * fitting.length)];
   const answer = sentenceTiles(phrase.translation);
-  if (answer.length < 2 || answer.length > 9) return null;
   const others = [
     ...ctx.phrases.filter((p) => p !== phrase).map((p) => p.translation),
     ...ctx.words.map((v) => v.translation),
@@ -332,7 +335,8 @@ function buildWordBank(ctx: BuildContext, id: string): WordBankExerciseData | nu
 }
 
 // A random sentence with a word count in range (null if none has).
-// It does not use takePhrase(), so the speaking exercises keep their sentences.
+// word-bank, order and tap-heard do not use takePhrase(), so the speaking
+// exercises keep their sentences.
 function pickPhraseWithWords(ctx: BuildContext, min: number, max: number) {
   const fitting = ctx.phrases
     .map((phrase) => ({ phrase, answer: sentenceTiles(phrase.text) }))
