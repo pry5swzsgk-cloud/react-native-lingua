@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -22,7 +22,7 @@ import {
   Exercise,
   ExerciseResult,
 } from "@/lib/exercises";
-import { getMistakeKey } from "@/lib/mistakes";
+import { getMistakeAction, getMistakeKey } from "@/lib/mistakes";
 import { getLessonAfter, getUnitOfLesson } from "@/lib/progress";
 import { playSound } from "@/lib/sounds";
 import { stopSpeaking } from "@/lib/speech";
@@ -41,9 +41,7 @@ export default function PracticeScreen() {
     addXP,
     dailyChests,
     weeklyChests,
-    mistakes,
     recordMistake,
-    resolveMistake,
   } = useLearningStore();
 
   const lesson = LESSONS.find((l) => l.id === id);
@@ -54,6 +52,8 @@ export default function PracticeScreen() {
   // The session is built on the device: it is shuffled and depends on
   // whether speech recognition is available here.
   const [exercises, setExercises] = useState<Exercise[] | null>(null);
+  // Items answered wrong in this session (a mistake is saved once)
+  const wrongKeys = useRef(new Set<string>());
   // Set when the session is finished: the XP it gave, whether the
   // lesson was done before and the session stats. null = still running.
   const [result, setResult] = useState<{
@@ -65,6 +65,7 @@ export default function PracticeScreen() {
 
   useEffect(() => {
     if (!lesson) return;
+    wrongKeys.current.clear();
     const canSpeak = isSpeechRecognitionSupported();
     if (lesson.boss) {
       // Boss levels: a longer, harder session without the easy exercise types
@@ -113,14 +114,14 @@ export default function PracticeScreen() {
     setResult({ xp, isRepeat, ...stats });
   }
 
-  // Remember wrong answers for the mistakes training; a right answer
-  // takes one remembered mistake away again
+  // Remember wrong answers for the mistakes training (once per session).
+  // Lessons never resolve mistakes: only the trainings do.
   function handleResult(exercise: Exercise, answer: ExerciseResult) {
     if (!("itemKey" in exercise) || !exercise.itemKey) return;
     const key = getMistakeKey(languageCode, exercise.itemKey);
-    if (answer === "wrong") recordMistake(key);
-    else if (answer === "correct" && mistakes[key] !== undefined)
-      resolveMistake(key);
+    if (getMistakeAction(answer, key, wrongKeys.current, false) === "record") {
+      recordMistake(key);
+    }
   }
 
   function handleClose() {
@@ -133,8 +134,12 @@ export default function PracticeScreen() {
   if (result !== null) {
     const nextLesson = getLessonAfter(lesson, completedLessonIds);
     const nextUnit = nextLesson && getUnitOfLesson(nextLesson);
+    const currentUnit = getUnitOfLesson(lesson);
     const isLevelUp =
-      nextUnit && nextUnit.level !== getUnitOfLesson(lesson)?.level;
+      nextUnit &&
+      currentUnit &&
+      nextUnit.order > currentUnit.order &&
+      nextUnit.level !== currentUnit.level;
 
     return (
       <SafeAreaView
@@ -142,7 +147,7 @@ export default function PracticeScreen() {
       >
         <View className="flex-1 items-center justify-center px-6">
           {lesson.boss ? (
-            <Text style={styles.bossEmoji}>{lesson.icon}</Text>
+            <Text className="text-8xl leading-[120px]">{lesson.icon}</Text>
           ) : (
             <Image
               source={images.mascotDog}
@@ -274,5 +279,4 @@ export default function PracticeScreen() {
 
 const styles = StyleSheet.create({
   mascot: { width: 180, height: 180 },
-  bossEmoji: { fontSize: 96, lineHeight: 120 },
 });

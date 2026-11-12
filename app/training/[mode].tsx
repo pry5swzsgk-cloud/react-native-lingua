@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -14,7 +14,7 @@ import { ExerciseSession } from "@/components/exercises/ExerciseSession";
 import { images } from "@/constants/images";
 import { colors } from "@/constants/theme";
 import { Exercise, ExerciseResult } from "@/lib/exercises";
-import { getMistakeKey } from "@/lib/mistakes";
+import { getMistakeAction, getMistakeKey } from "@/lib/mistakes";
 import { playSound } from "@/lib/sounds";
 import { stopSpeaking } from "@/lib/speech";
 import { isSpeechRecognitionSupported } from "@/lib/speechRecognition";
@@ -50,6 +50,8 @@ export default function TrainingScreen() {
   // The session is built once on the device; "Train again" builds a new one
   const [exercises, setExercises] = useState<Exercise[] | null>(null);
   const [round, setRound] = useState(0);
+  // Items answered wrong in this session (a mistake is saved once)
+  const wrongKeys = useRef(new Set<string>());
   const [result, setResult] = useState<{
     total: number;
     mistakes: number;
@@ -58,6 +60,7 @@ export default function TrainingScreen() {
 
   useEffect(() => {
     if (!info) return;
+    wrongKeys.current.clear();
     setExercises(
       buildTraining(info.mode, {
         languageCode: selectedLanguage,
@@ -155,12 +158,14 @@ export default function TrainingScreen() {
     setResult({ ...stats, xp: info.xp });
   }
 
-  // Remember wrong answers; a right answer takes one mistake away again
+  // Remember wrong answers (once per session); a right answer takes one
+  // mistake away, but only if the item was not wrong in this session
   function handleResult(exercise: Exercise, answer: ExerciseResult) {
     if (!("itemKey" in exercise) || !exercise.itemKey) return;
     const key = getMistakeKey(selectedLanguage, exercise.itemKey);
-    if (answer === "wrong") recordMistake(key);
-    else if (answer === "correct" && mistakes[key] !== undefined)
+    const action = getMistakeAction(answer, key, wrongKeys.current, true);
+    if (action === "record") recordMistake(key);
+    else if (action === "resolve" && mistakes[key] !== undefined)
       resolveMistake(key);
   }
 

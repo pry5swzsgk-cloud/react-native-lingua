@@ -1,7 +1,7 @@
 import { BASE_LESSONS } from "@/data/lessons";
-import { ExerciseSource } from "@/lib/exercises";
+import { ExerciseResult, ExerciseSource } from "@/lib/exercises";
 import { getUnitOfLesson } from "@/lib/progress";
-import { LanguageCode, Phrase, VocabularyItem } from "@/types/learning";
+import { LanguageCode, Lesson, Phrase, VocabularyItem } from "@/types/learning";
 
 const MAX_MISTAKE_ITEMS = 12;
 const MIN_WORDS = 4;
@@ -15,16 +15,35 @@ export function getMistakeKey(
   return `${languageCode ?? ""}|${itemKey}`;
 }
 
-// The saved mistakes of one language: [itemKey, count], most often first
+// The lessons of one language
+function getLanguageLessons(languageCode: LanguageCode | null) {
+  return BASE_LESSONS.filter(
+    (lesson) => getUnitOfLesson(lesson)?.languageCode === languageCode,
+  );
+}
+
+// The saved mistakes of one language that still exist in the lessons:
+// [itemKey, count, lesson], most often first
 function getLanguageMistakes(
   languageCode: LanguageCode | null,
   mistakes: Record<string, number>,
-): [string, number][] {
+): [string, number, Lesson][] {
   const prefix = `${languageCode ?? ""}|`;
-  return Object.entries(mistakes)
-    .filter(([key]) => key.startsWith(prefix))
-    .map(([key, count]): [string, number] => [key.slice(prefix.length), count])
-    .sort((a, b) => b[1] - a[1]);
+  const lessons = getLanguageLessons(languageCode);
+  const found: [string, number, Lesson][] = [];
+
+  for (const [key, count] of Object.entries(mistakes)) {
+    if (!key.startsWith(prefix)) continue;
+    const itemKey = key.slice(prefix.length);
+    const lesson = lessons.find(
+      (item) =>
+        item.vocabulary.some((word) => word.word === itemKey) ||
+        item.phrases.some((phrase) => phrase.text === itemKey),
+    );
+    if (lesson) found.push([itemKey, count, lesson]);
+  }
+
+  return found.sort((a, b) => b[1] - a[1]);
 }
 
 // How many mistakes are saved for this language
@@ -38,15 +57,32 @@ export function countMistakes(
   );
 }
 
+// Decides what one answer means for the saved mistakes.
+// `wrongKeys` remembers the items answered wrong in this session.
+export function getMistakeAction(
+  result: ExerciseResult,
+  key: string,
+  wrongKeys: Set<string>,
+  canResolve: boolean,
+): "record" | "resolve" | "none" {
+  if (result === "wrong") {
+    if (wrongKeys.has(key)) return "none";
+    wrongKeys.add(key);
+    return "record";
+  }
+  if (result === "correct" && canResolve && !wrongKeys.has(key)) {
+    return "resolve";
+  }
+  return "none";
+}
+
 // The words and sentences behind the saved mistakes, as material for a
 // practice session. Items that cannot be found any more are skipped.
 export function getMistakeSource(
   languageCode: LanguageCode | null,
   mistakes: Record<string, number>,
 ): ExerciseSource {
-  const lessons = BASE_LESSONS.filter(
-    (lesson) => getUnitOfLesson(lesson)?.languageCode === languageCode,
-  );
+  const lessons = getLanguageLessons(languageCode);
   const entries = getLanguageMistakes(languageCode, mistakes).slice(
     0,
     MAX_MISTAKE_ITEMS,
@@ -56,19 +92,15 @@ export function getMistakeSource(
   const phrases: Phrase[] = [];
   const sourceLessonIds = new Set<string>();
 
-  for (const [itemKey] of entries) {
-    for (const lesson of lessons) {
-      const word = lesson.vocabulary.find((item) => item.word === itemKey);
-      const phrase = lesson.phrases.find((item) => item.text === itemKey);
-      if (!word && !phrase) continue;
-      sourceLessonIds.add(lesson.id);
-      if (word && !vocabulary.some((item) => item.word === word.word)) {
-        vocabulary.push(word);
-      }
-      if (phrase && !phrases.some((item) => item.text === phrase.text)) {
-        phrases.push(phrase);
-      }
-      break;
+  for (const [itemKey, , lesson] of entries) {
+    const word = lesson.vocabulary.find((item) => item.word === itemKey);
+    const phrase = lesson.phrases.find((item) => item.text === itemKey);
+    sourceLessonIds.add(lesson.id);
+    if (word && !vocabulary.some((item) => item.word === word.word)) {
+      vocabulary.push(word);
+    }
+    if (phrase && !phrases.some((item) => item.text === phrase.text)) {
+      phrases.push(phrase);
     }
   }
 
