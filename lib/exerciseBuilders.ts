@@ -1,5 +1,6 @@
 import type { LanguageCode, Phrase, VocabularyItem } from "@/types/learning";
 import type {
+  ChoiceExerciseData,
   DictationExerciseData,
   Exercise,
   ExerciseKind,
@@ -150,9 +151,141 @@ function buildSpeak(ctx: BuildContext, id: string): SpeakExerciseData | null {
   };
 }
 
+// Different values only, first one wins
+function unique(items: string[]): string[] {
+  return [...new Set(items)];
+}
+
+// The right answer plus up to 3 wrong ones (all different), shuffled.
+// null when there are fewer than 2 different options.
+function pickOptions(
+  answer: string,
+  wrong: string[],
+  random: () => number,
+): string[] | null {
+  const others = shuffle(unique(wrong).filter((label) => label !== answer), random).slice(0, 3);
+  return others.length === 0 ? null : shuffle([answer, ...others], random);
+}
+
+function buildChoice(ctx: BuildContext, id: string): ChoiceExerciseData | null {
+  const word = ctx.takeWord();
+  const toWord = ctx.random() < 0.5; // meaning -> word, otherwise word -> meaning
+  const answer = toWord ? word.word : word.translation;
+  // Words with the same meaning would be a second right answer
+  const rivals = ctx.words.filter((v) => v.translation !== word.translation);
+  const labels = pickOptions(
+    answer,
+    toWord ? rivals.map((v) => v.word) : ctx.words.map((v) => v.translation),
+    ctx.random,
+  );
+  if (!labels) return null;
+  return {
+    type: "choice",
+    kind: "choice",
+    id,
+    itemKey: word.word,
+    instruction: toWord ? "Which word fits?" : "What does it mean?",
+    prompt: toWord ? word.translation : word.word,
+    promptEmoji: word.emoji || undefined,
+    options: labels.map((label) => ({ label })),
+    answer,
+    layout: "list",
+  };
+}
+
+function buildPicture(ctx: BuildContext, id: string): ChoiceExerciseData | null {
+  // Only words with their own emoji and their own meaning can be a picture
+  const seenEmojis = new Set<string>();
+  const seenMeanings = new Set<string>();
+  const pictures = ctx.words.filter((v) => {
+    const emoji = v.emoji?.trim();
+    if (!emoji || seenEmojis.has(emoji) || seenMeanings.has(v.translation)) return false;
+    seenEmojis.add(emoji);
+    seenMeanings.add(v.translation);
+    return true;
+  });
+  if (pictures.length < 4) return null;
+  const word = pictures[Math.floor(ctx.random() * pictures.length)];
+  const others = shuffle(
+    pictures.filter((v) => v !== word),
+    ctx.random,
+  ).slice(0, 3);
+  return {
+    type: "choice",
+    kind: "picture",
+    id,
+    itemKey: word.word,
+    instruction: "Which picture fits?",
+    prompt: word.word,
+    options: shuffle([word, ...others], ctx.random).map((v) => ({
+      label: v.translation,
+      emoji: v.emoji?.trim(),
+    })),
+    answer: word.translation,
+    layout: "grid",
+  };
+}
+
+const MAX_HEARD_SENTENCE_WORDS = 6;
+
+function buildAudioMatch(ctx: BuildContext, id: string): ChoiceExerciseData | null {
+  const texts = unique(ctx.phrases.map((p) => p.text));
+  let audio: string;
+  let labels: string[] | null;
+  if (texts.length >= 2 && ctx.random() < 0.5) {
+    // A short sentence, the options are other sentences
+    const short = texts.filter((t) => t.split(/\s+/).length <= MAX_HEARD_SENTENCE_WORDS);
+    const pool = short.length > 0 ? short : texts;
+    audio = pool[Math.floor(ctx.random() * pool.length)];
+    labels = pickOptions(audio, texts, ctx.random);
+  } else {
+    audio = ctx.takeWord().word;
+    labels = pickOptions(
+      audio,
+      ctx.words.map((v) => v.word),
+      ctx.random,
+    );
+  }
+  if (!labels) return null;
+  return {
+    type: "choice",
+    kind: "audio-match",
+    id,
+    itemKey: audio,
+    instruction: "What do you hear?",
+    audio,
+    options: labels.map((label) => ({ label })),
+    answer: audio,
+    layout: "list",
+  };
+}
+
+function buildTrueFalse(ctx: BuildContext, id: string): ChoiceExerciseData {
+  const word = ctx.takeWord();
+  const wrong = ctx.words.filter((v) => v.translation !== word.translation);
+  // Half of the statements are false (if there is another meaning to use)
+  const isTrue = wrong.length === 0 || ctx.random() < 0.5;
+  const shown = isTrue ? word.translation : wrong[Math.floor(ctx.random() * wrong.length)].translation;
+  return {
+    type: "choice",
+    kind: "true-false",
+    id,
+    itemKey: word.word,
+    instruction: "True or false?",
+    prompt: `\u201C${word.word}\u201D means \u201C${shown}\u201D`,
+    options: [{ label: "True" }, { label: "False" }],
+    answer: isTrue ? "True" : "False",
+    layout: "grid",
+  };
+}
+
 export const KINDS: KindSpec[] = [
   { kind: "match", group: "connect", easy: true, needsSpeech: false, build: buildMatch },
   { kind: "listen", group: "listening", easy: true, needsSpeech: false, build: buildListen },
+  { kind: "choice", group: "choosing", easy: true, needsSpeech: false, build: buildChoice },
+  { kind: "picture", group: "choosing", easy: true, needsSpeech: false, build: buildPicture },
+  { kind: "audio-match", group: "listening", easy: false, needsSpeech: false, build: buildAudioMatch },
+  { kind: "true-false", group: "choosing", easy: true, needsSpeech: false, build: buildTrueFalse },
   { kind: "write-word", group: "typing", easy: false, needsSpeech: false, build: buildWrite },
   { kind: "dictation", group: "listening", easy: false, needsSpeech: false, build: buildDictation },
   { kind: "speak-sentence", group: "speaking", easy: false, needsSpeech: true, build: buildSpeak },

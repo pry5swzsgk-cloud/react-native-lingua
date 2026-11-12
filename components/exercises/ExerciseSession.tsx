@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ChoiceExercise } from "@/components/exercises/ChoiceExercise";
 import { ListenExercise } from "@/components/exercises/ListenExercise";
 import { MatchExercise } from "@/components/exercises/MatchExercise";
 import { SpeakExercise } from "@/components/exercises/SpeakExercise";
@@ -112,6 +113,13 @@ export function ExerciseSession({
           <MatchExercise key={position} exercise={exercise} onDone={handleDone} />
         ) : exercise.type === "listen" ? (
           <ListenExercise
+            key={position}
+            exercise={exercise}
+            languageCode={languageCode}
+            onDone={handleDone}
+          />
+        ) : exercise.type === "choice" ? (
+          <ChoiceExercise
             key={position}
             exercise={exercise}
             languageCode={languageCode}
