@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   ScrollView,
   StyleSheet,
@@ -23,7 +24,7 @@ import {
   isSpeechRecognitionSupported,
   listenOnce,
 } from "@/lib/speechRecognition";
-import { useLearningStore } from "@/store/learningStore";
+import { useLearningHydrated, useLearningStore } from "@/store/learningStore";
 import { LanguageCode } from "@/types/learning";
 import { SceneKind } from "@/types/scenes";
 
@@ -31,6 +32,7 @@ import { SceneKind } from "@/types/scenes";
 interface Answer {
   wrong: string[]; // options tapped that were wrong
   right: string | null; // the right option, once found
+  last: string | null; // the option tapped last
 }
 
 const KIND_NAMES: Record<SceneKind, string> = {
@@ -67,8 +69,17 @@ function LineBubble({
           {`🎧 ${speaker} is speaking…`}
         </Text>
         <View className="flex-row items-center gap-2 mt-2">
-          <SpeakButton text={text} languageCode={languageCode} />
-          <SpeakButton text={text} languageCode={languageCode} slow />
+          <SpeakButton
+            text={text}
+            languageCode={languageCode}
+            label="Listen again"
+          />
+          <SpeakButton
+            text={text}
+            languageCode={languageCode}
+            slow
+            label="Listen slowly"
+          />
         </View>
       </View>
     );
@@ -107,6 +118,7 @@ export default function SceneScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { completedSceneIds, addXP, completeScene } = useLearningStore();
+  const hydrated = useLearningHydrated();
   const scene = getScene(id);
 
   // How many steps are visible (the last one is the current one)
@@ -124,6 +136,8 @@ export default function SceneScreen() {
   >({});
   const [sayError, setSayError] = useState("");
   const stopListeningRef = useRef<(() => void) | null>(null);
+  // XP is given only once per round, even after a double tap
+  const finishedRef = useRef(false);
 
   // Read a new line aloud once when it appears
   useEffect(() => {
@@ -157,7 +171,7 @@ export default function SceneScreen() {
           className="flex-1 items-center justify-center px-8"
           testID="scene-not-found"
         >
-          <Text style={styles.emoji}>🤔</Text>
+          <Text className="text-7xl leading-[90px]">🤔</Text>
           <Text className="body-md text-text-secondary text-center mt-3">
             Story not found
           </Text>
@@ -171,6 +185,18 @@ export default function SceneScreen() {
               Back
             </Text>
           </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!hydrated) {
+    return (
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: colors.neutral.background }}
+      >
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color={colors.primary.purple} />
         </View>
       </SafeAreaView>
     );
@@ -194,7 +220,11 @@ export default function SceneScreen() {
       playSound("correct");
       setAnswers((prev) => ({
         ...prev,
-        [index]: { wrong: prev[index]?.wrong ?? [], right: option },
+        [index]: {
+          wrong: prev[index]?.wrong ?? [],
+          right: option,
+          last: option,
+        },
       }));
     } else {
       playSound("wrong");
@@ -203,6 +233,7 @@ export default function SceneScreen() {
         [index]: {
           wrong: [...(prev[index]?.wrong ?? []), option],
           right: null,
+          last: option,
         },
       }));
     }
@@ -245,6 +276,8 @@ export default function SceneScreen() {
       return;
     }
     // Last step done: full XP the first time, half (rounded up) after that
+    if (finishedRef.current) return;
+    finishedRef.current = true;
     stopSpeaking();
     playSound("complete");
     const earned = completedSceneIds.includes(scene.id)
@@ -262,6 +295,7 @@ export default function SceneScreen() {
     setSayError("");
     setShown(1);
     setXp(null);
+    finishedRef.current = false;
     setShowTranscript(false);
     setRound((value) => value + 1);
   }
@@ -398,6 +432,10 @@ export default function SceneScreen() {
         const chosen = step.options.find(
           (option) => option.text === answers[index]?.right,
         );
+        // Feedback of the option tapped last, also when it was wrong
+        const feedback = step.options.find(
+          (option) => option.text === answers[index]?.last,
+        )?.feedback;
         return (
           <View key={index} className="mb-3">
             <Text className="font-poppins-semibold text-base text-text-primary mb-2">
@@ -407,6 +445,14 @@ export default function SceneScreen() {
               step.options.map((option) =>
                 renderOption(index, option.text, step.answer, true),
               )}
+            {!chosen && feedback && (
+              <Text
+                className="font-poppins-regular text-sm text-text-secondary mb-3"
+                testID="scene-feedback"
+              >
+                {feedback}
+              </Text>
+            )}
             {chosen && (
               <>
                 <LineBubble
@@ -449,9 +495,12 @@ export default function SceneScreen() {
                     )}
                   </View>
                 )}
-                {chosen.feedback && (
-                  <Text className="font-poppins-regular text-sm text-text-secondary mb-3">
-                    {chosen.feedback}
+                {feedback && (
+                  <Text
+                    className="font-poppins-regular text-sm text-text-secondary mb-3"
+                    testID="scene-feedback"
+                  >
+                    {feedback}
                   </Text>
                 )}
               </>
@@ -538,6 +587,5 @@ export default function SceneScreen() {
 
 const styles = StyleSheet.create({
   mascot: { width: 180, height: 180 },
-  emoji: { fontSize: 72, lineHeight: 90 },
   content: { paddingHorizontal: 20, paddingBottom: 16 },
 });

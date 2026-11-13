@@ -1,5 +1,5 @@
 import { getDialogs } from "@/data/dialogs";
-import { Exercise, ExerciseKind, ExerciseSource, buildSession } from "@/lib/exercises";
+import { Exercise, ExerciseKind, ExerciseSource, SessionOptions, buildSession } from "@/lib/exercises";
 import { KINDS, shuffle } from "@/lib/exerciseBuilders";
 import type { ExerciseGroup } from "@/lib/exerciseBuilders";
 import { countMistakes, getMistakeSource } from "@/lib/mistakes";
@@ -62,6 +62,19 @@ function sourceFromLessons(id: string, lessons: Lesson[], base?: ExerciseSource)
   return { id, vocabulary, phrases };
 }
 
+// Builds a session of the given kinds only. buildSession drops the filter when
+// nothing fits, so exercises of other kinds are removed here.
+function buildOnly(
+  source: ExerciseSource,
+  languageCode: LanguageCode | null,
+  options: Omit<SessionOptions, "only">,
+  allowed: ExerciseKind[],
+): Exercise[] {
+  return buildSession(source, languageCode, { ...options, only: allowed }).filter(
+    (exercise) => allowed.includes(exercise.kind),
+  );
+}
+
 export function buildTraining(
   mode: TrainingMode,
   input: {
@@ -112,21 +125,21 @@ export function buildTraining(
 
   if (mode === "speaking") {
     if (!canSpeak) return [];
-    return buildSession({ ...sourceFromLessons(id, recent), dialogs }, languageCode, {
-      canSpeak,
-      size: SIZES.speaking,
-      only: kindsOfGroup("speaking"),
-      random,
-    });
+    return buildOnly(
+      { ...sourceFromLessons(id, recent), dialogs },
+      languageCode,
+      { canSpeak, size: SIZES.speaking, random },
+      kindsOfGroup("speaking"),
+    );
   }
 
   if (mode === "listening") {
-    return buildSession({ ...sourceFromLessons(id, recent), dialogs }, languageCode, {
-      canSpeak,
-      size: SIZES.listening,
-      only: kindsOfGroup("listening"),
-      random,
-    });
+    return buildOnly(
+      { ...sourceFromLessons(id, recent), dialogs },
+      languageCode,
+      { canSpeak, size: SIZES.listening, random },
+      kindsOfGroup("listening"),
+    );
   }
 
   // personal: mistakes + the last 3 learned lessons + 2 random older ones

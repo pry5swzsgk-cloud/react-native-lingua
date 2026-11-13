@@ -20,7 +20,7 @@ import { stopSpeaking } from "@/lib/speech";
 import { isSpeechRecognitionSupported } from "@/lib/speechRecognition";
 import { buildTraining, MASTERY_XP, TRAININGS } from "@/lib/training";
 import { useLanguageStore } from "@/store/languageStore";
-import { useLearningStore } from "@/store/learningStore";
+import { useLearningHydrated, useLearningStore } from "@/store/learningStore";
 
 // One training session (vocabulary, mistakes, speaking, ...). It works
 // like a practice session, but it is not tied to a lesson.
@@ -30,6 +30,7 @@ export default function TrainingScreen() {
     unit?: string;
   }>();
   const router = useRouter();
+  const hydrated = useLearningHydrated();
   const { selectedLanguage } = useLanguageStore();
   const {
     completedLessonIds,
@@ -52,6 +53,8 @@ export default function TrainingScreen() {
   const [round, setRound] = useState(0);
   // Items answered wrong in this session (a mistake is saved once)
   const wrongKeys = useRef(new Set<string>());
+  // XP is given only once per session, even after a double tap
+  const finishedRef = useRef(false);
   const [result, setResult] = useState<{
     total: number;
     mistakes: number;
@@ -59,8 +62,9 @@ export default function TrainingScreen() {
   } | null>(null);
 
   useEffect(() => {
-    if (!info) return;
+    if (!info || !hydrated) return;
     wrongKeys.current.clear();
+    finishedRef.current = false;
     setExercises(
       buildTraining(info.mode, {
         languageCode: selectedLanguage,
@@ -74,7 +78,7 @@ export default function TrainingScreen() {
     // Built only when the screen opens or the learner trains again, not on
     // every change of the saved mistakes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [info?.mode, selectedLanguage, unit, round]);
+  }, [info?.mode, selectedLanguage, unit, round, hydrated]);
 
   function handleBack() {
     stopSpeaking();
@@ -91,7 +95,7 @@ export default function TrainingScreen() {
           className="flex-1 items-center justify-center px-8"
           testID="training-empty"
         >
-          <Text style={styles.emoji}>{emoji}</Text>
+          <Text className="text-7xl leading-[90px]">{emoji}</Text>
           <Text className="body-md text-text-secondary text-center mt-3">
             {text}
           </Text>
@@ -126,6 +130,16 @@ export default function TrainingScreen() {
       "Speaking training needs a microphone. Open Lingo in a browser with speech recognition.",
     );
   }
+  if (
+    exercises &&
+    exercises.length === 0 &&
+    (info.mode === "listening" || (info.mode === "speaking" && canSpeak))
+  ) {
+    return renderEmpty(
+      "📚",
+      "Not enough content for this training yet. Finish a lesson first.",
+    );
+  }
   if (info.mode === "mistakes" && exercises && exercises.length === 0) {
     return renderEmpty("🎉", "No mistakes to practise 🎉");
   }
@@ -143,7 +157,8 @@ export default function TrainingScreen() {
   }
 
   function handleFinish(stats: { total: number; mistakes: number }) {
-    if (!info) return;
+    if (!info || finishedRef.current) return;
+    finishedRef.current = true;
     playSound("complete");
     if (info.mode === "mastery") {
       // 40 XP the first time, 20 when the unit is already mastered
@@ -243,5 +258,4 @@ export default function TrainingScreen() {
 
 const styles = StyleSheet.create({
   mascot: { width: 180, height: 180 },
-  emoji: { fontSize: 72, lineHeight: 90 },
 });
