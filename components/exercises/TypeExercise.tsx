@@ -11,6 +11,7 @@ import {
   ExerciseResult,
   WriteExerciseData,
 } from "@/lib/exercises";
+import { checkTranslatedSentence } from "@/lib/sentenceMatch";
 import { playSound } from "@/lib/sounds";
 import { stopSpeaking } from "@/lib/speech";
 import { LanguageCode } from "@/types/learning";
@@ -27,6 +28,8 @@ interface TypeExerciseProps {
 export function TypeExercise({ exercise, languageCode, onDone }: TypeExerciseProps) {
   const [typed, setTyped] = useState("");
   const [status, setStatus] = useState<AnswerStatus | null>(null);
+  // false when a sentence was right but worded differently from the model answer
+  const [exact, setExact] = useState(true);
 
   const languageName =
     LANGUAGES.find((l) => l.code === languageCode)?.name ?? "the language";
@@ -35,11 +38,18 @@ export function TypeExercise({ exercise, languageCode, onDone }: TypeExercisePro
   function handleCheck() {
     if (!typed.trim() || status !== null) return;
     stopSpeaking();
-    const result = checkTypedAnswer(
-      exercise.answer,
-      typed,
-      exercise.answerInEnglish,
-    );
+    let result: AnswerStatus;
+    if (exercise.kind === "translate-sentence") {
+      const sentence = checkTranslatedSentence(exercise.answer, typed);
+      result = sentence.status;
+      setExact(sentence.exact);
+    } else {
+      result = checkTypedAnswer(
+        exercise.answer,
+        typed,
+        exercise.answerInEnglish,
+      );
+    }
     // "almost" (accent or typo) still counts, so it gets the happy sound
     playSound(result === "wrong" ? "wrong" : "correct");
     setStatus(result);
@@ -52,7 +62,9 @@ export function TypeExercise({ exercise, languageCode, onDone }: TypeExercisePro
           <>
             <Text className="h3 mb-1">Write this in {answerLanguage}</Text>
             <Text className="body-sm text-text-secondary mb-5">
-              Type the answer yourself. Capital letters don&apos;t matter.
+              {exercise.kind === "translate-sentence"
+                ? "Any word order that means the same is fine."
+                : "Type the answer yourself. Capital letters don't matter."}
             </Text>
             <View className="bg-surface rounded-2xl px-5 py-6 items-center mb-5">
               {exercise.emoji && (
@@ -114,6 +126,11 @@ export function TypeExercise({ exercise, languageCode, onDone }: TypeExercisePro
             backgroundColor: "#fff",
           }}
         />
+        {status === "correct" && !exact && (
+          <Text className="body-sm text-text-secondary mt-3" testID="translate-alternative">
+            Another way to say it: {exercise.answer}
+          </Text>
+        )}
       </View>
 
       <ExerciseFooter
