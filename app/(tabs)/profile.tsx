@@ -33,7 +33,7 @@ export default function ProfileScreen() {
 
   const stats = [
     { id: "total-xp", label: "Total XP", value: totalXP },
-    { id: "lessons", label: "Lessons done", value: completedLessonIds.length },
+    { id: "lessons", label: "Levels done", value: completedLessonIds.length },
     {
       id: "longest-streak",
       label: "Longest streak",

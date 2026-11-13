@@ -1,11 +1,8 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
-  KeyboardAvoidingView,
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -13,14 +10,19 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ListenExercise } from "@/components/exercises/ListenExercise";
-import { MatchExercise } from "@/components/exercises/MatchExercise";
-import { SpeakExercise } from "@/components/exercises/SpeakExercise";
-import { TypeExercise } from "@/components/exercises/TypeExercise";
+import { ExerciseSession } from "@/components/exercises/ExerciseSession";
 import { images } from "@/constants/images";
 import { colors } from "@/constants/theme";
+import { BOSS_SESSION_SIZE } from "@/data/bosses";
+import { getDialogs } from "@/data/dialogs";
 import { LESSONS } from "@/data/lessons";
-import { buildExercises, Exercise, ExerciseResult } from "@/lib/exercises";
+import {
+  buildExercises,
+  buildSession,
+  Exercise,
+  ExerciseResult,
+} from "@/lib/exercises";
+import { getMistakeAction, getMistakeKey } from "@/lib/mistakes";
 import { getLessonAfter, getUnitOfLesson } from "@/lib/progress";
 import { playSound } from "@/lib/sounds";
 import { stopSpeaking } from "@/lib/speech";
@@ -33,8 +35,14 @@ import { useLearningStore } from "@/store/learningStore";
 export default function PracticeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { completedLessonIds, completeLesson, addXP, dailyChests, weeklyChests } =
-    useLearningStore();
+  const {
+    completedLessonIds,
+    completeLesson,
+    addXP,
+    dailyChests,
+    weeklyChests,
+    recordMistake,
+  } = useLearningStore();
 
   const lesson = LESSONS.find((l) => l.id === id);
   const languageCode = lesson
@@ -43,30 +51,43 @@ export default function PracticeScreen() {
 
   // The session is built on the device: it is shuffled and depends on
   // whether speech recognition is available here.
-  const [queue, setQueue] = useState<Exercise[] | null>(null);
-  const [total, setTotal] = useState(0);
-  const [position, setPosition] = useState(0);
-  const [solved, setSolved] = useState(0);
-  const [mistakes, setMistakes] = useState(0);
-  // Set when the session is finished: the XP it gave and whether the
-  // lesson was done before. null = still running.
+  const [exercises, setExercises] = useState<Exercise[] | null>(null);
+  // Items answered wrong in this session (a mistake is saved once)
+  const wrongKeys = useRef(new Set<string>());
+  // XP is given only once per session, even after a double tap
+  const finishedRef = useRef(false);
+  // Set when the session is finished: the XP it gave, whether the
+  // lesson was done before and the session stats. null = still running.
   const [result, setResult] = useState<{
     xp: number;
     isRepeat: boolean;
+    total: number;
+    mistakes: number;
   } | null>(null);
 
   useEffect(() => {
     if (!lesson) return;
-    const exercises = buildExercises(
-      lesson,
-      languageCode,
-      isSpeechRecognitionSupported(),
-    );
-    setQueue(exercises);
-    setTotal(exercises.length);
-    setPosition(0);
-    setSolved(0);
-    setMistakes(0);
+    wrongKeys.current.clear();
+    finishedRef.current = false;
+    const canSpeak = isSpeechRecognitionSupported();
+    if (lesson.boss) {
+      // Boss levels: a longer, harder session without the easy exercise types
+      const level = getUnitOfLesson(lesson)?.level;
+      setExercises(
+        buildSession(
+          {
+            id: lesson.id,
+            vocabulary: lesson.vocabulary,
+            phrases: lesson.phrases,
+            dialogs: level ? getDialogs(languageCode, level) : [],
+          },
+          languageCode,
+          { canSpeak, hard: true, size: BOSS_SESSION_SIZE[lesson.boss.kind] },
+        ),
+      );
+    } else {
+      setExercises(buildExercises(lesson, languageCode, canSpeak));
+    }
     setResult(null);
   }, [lesson, languageCode]);
 
@@ -82,24 +103,9 @@ export default function PracticeScreen() {
     );
   }
 
-  function handleDone(result: ExerciseResult) {
-    if (!queue || !lesson) return;
-    stopSpeaking();
-
-    let nextQueue = queue;
-    if (result === "wrong") {
-      // Ask the same exercise again at the end of the session
-      nextQueue = [...queue, queue[position]];
-      setQueue(nextQueue);
-      setMistakes(mistakes + 1);
-    } else {
-      setSolved(solved + 1);
-    }
-
-    if (position + 1 < nextQueue.length) {
-      setPosition(position + 1);
-      return;
-    }
+  function handleFinish(stats: { total: number; mistakes: number }) {
+    if (!lesson || finishedRef.current) return;
+    finishedRef.current = true;
 
     // Everything is solved: the lesson counts as complete now
     playSound("complete");
@@ -109,7 +115,17 @@ export default function PracticeScreen() {
     const xp = isRepeat ? Math.ceil(lesson.xpReward / 2) : lesson.xpReward;
     if (!isRepeat) completeLesson(lesson.id);
     addXP(xp);
-    setResult({ xp, isRepeat });
+    setResult({ xp, isRepeat, ...stats });
+  }
+
+  // Remember wrong answers for the mistakes training (once per session).
+  // Lessons never resolve mistakes: only the trainings do.
+  function handleResult(exercise: Exercise, answer: ExerciseResult) {
+    if (!("itemKey" in exercise) || !exercise.itemKey) return;
+    const key = getMistakeKey(languageCode, exercise.itemKey);
+    if (getMistakeAction(answer, key, wrongKeys.current, false) === "record") {
+      recordMistake(key);
+    }
   }
 
   function handleClose() {
@@ -122,20 +138,39 @@ export default function PracticeScreen() {
   if (result !== null) {
     const nextLesson = getLessonAfter(lesson, completedLessonIds);
     const nextUnit = nextLesson && getUnitOfLesson(nextLesson);
+    const currentUnit = getUnitOfLesson(lesson);
     const isLevelUp =
-      nextUnit && nextUnit.level !== getUnitOfLesson(lesson)?.level;
+      nextUnit &&
+      currentUnit &&
+      nextUnit.order > currentUnit.order &&
+      nextUnit.level !== currentUnit.level;
 
     return (
       <SafeAreaView
         style={{ flex: 1, backgroundColor: colors.neutral.background }}
       >
         <View className="flex-1 items-center justify-center px-6">
-          <Image
-            source={images.mascotDog}
-            style={styles.mascot}
-            resizeMode="contain"
-          />
-          <Text className="h2 text-center mt-4">Lesson complete!</Text>
+          {lesson.boss ? (
+            <Text className="text-8xl leading-[120px]">{lesson.icon}</Text>
+          ) : (
+            <Image
+              source={images.mascotDog}
+              style={styles.mascot}
+              resizeMode="contain"
+            />
+          )}
+          <Text className="h2 text-center mt-4">
+            {lesson.boss
+              ? lesson.boss.kind === "final"
+                ? "Final boss defeated!"
+                : "Mini boss defeated!"
+              : "Lesson complete!"}
+          </Text>
+          {lesson.boss?.kind === "final" && (
+            <Text className="h3 text-center mt-1">
+              {getUnitOfLesson(lesson)?.level} complete 🎉
+            </Text>
+          )}
           <Text
             className="body-md text-text-secondary text-center mt-1"
             testID="session-xp"
@@ -148,9 +183,9 @@ export default function PracticeScreen() {
             className="body-sm text-text-secondary text-center mt-1"
             testID="session-summary"
           >
-            {mistakes === 0
-              ? `${total} exercises, no mistakes. Perfect!`
-              : `${total} exercises, ${mistakes} ${mistakes === 1 ? "mistake" : "mistakes"} fixed.`}
+            {result.mistakes === 0
+              ? `${result.total} exercises, no mistakes. Perfect!`
+              : `${result.total} exercises, ${result.mistakes} ${result.mistakes === 1 ? "mistake" : "mistakes"} fixed.`}
           </Text>
           {dailyChests + weeklyChests > 0 && (
             <View
@@ -222,70 +257,27 @@ export default function PracticeScreen() {
     );
   }
 
-  const exercise = queue?.[position];
-  const progress = total > 0 ? Math.round((solved / total) * 100) : 0;
+  if (!exercises) {
+    return (
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: colors.neutral.background }}
+      >
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color={colors.primary.purple} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.neutral.background }}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        {/* Header: close button and progress */}
-        <View className="flex-row items-center gap-3 px-5 pt-2 pb-5">
-          <TouchableOpacity
-            onPress={handleClose}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel="Close exercises"
-            testID="practice-close-button"
-          >
-            <Ionicons
-              name="close"
-              size={26}
-              color={colors.neutral.textSecondary}
-            />
-          </TouchableOpacity>
-          <View className="flex-1 h-3 bg-border rounded-full overflow-hidden">
-            <View
-              className="h-3 bg-success rounded-full"
-              style={{ width: `${progress}%` }}
-            />
-          </View>
-          <Text className="caption" testID="practice-progress">
-            {solved}/{total}
-          </Text>
-        </View>
-
-        {!exercise ? (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color={colors.primary.purple} />
-          </View>
-        ) : exercise.type === "match" ? (
-          <MatchExercise key={position} exercise={exercise} onDone={handleDone} />
-        ) : exercise.type === "listen" ? (
-          <ListenExercise
-            key={position}
-            exercise={exercise}
-            languageCode={languageCode}
-            onDone={handleDone}
-          />
-        ) : exercise.type === "speak" ? (
-          <SpeakExercise
-            key={position}
-            exercise={exercise}
-            languageCode={languageCode}
-            onDone={handleDone}
-          />
-        ) : (
-          <TypeExercise
-            key={position}
-            exercise={exercise}
-            languageCode={languageCode}
-            onDone={handleDone}
-          />
-        )}
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+    <ExerciseSession
+      exercises={exercises}
+      languageCode={languageCode}
+      onClose={handleClose}
+      onFinish={handleFinish}
+      onResult={handleResult}
+      boss={lesson.boss ? { name: lesson.title, emoji: lesson.icon } : undefined}
+    />
   );
 }
 

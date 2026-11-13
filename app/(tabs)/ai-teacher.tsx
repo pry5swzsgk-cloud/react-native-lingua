@@ -73,9 +73,13 @@ export default function AITeacherScreen() {
   }
 
   // Dax starts with a topic that fits the lesson the learner is on
-  const preferredTheme =
-    getNextLesson(selectedLanguage, completedLessonIds, startUnitOrder)?.theme ??
-    null;
+  // (a boss level has no topic of its own)
+  const nextLesson = getNextLesson(
+    selectedLanguage,
+    completedLessonIds,
+    startUnitOrder,
+  );
+  const preferredTheme = nextLesson && !nextLesson.boss ? nextLesson.theme : null;
 
   if (smartEnabled) {
     const language = LANGUAGES.find((l) => l.code === content.languageCode);

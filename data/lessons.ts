@@ -2,9 +2,10 @@ import { ELEMENTARY_LESSONS } from '@/data/lessons-elementary';
 import { INTERMEDIATE_LESSONS } from '@/data/lessons-intermediate';
 import { SPANISH_EXTRA_LESSONS } from '@/data/lessons-spanish';
 import { SPANISH_MORE_LESSONS } from '@/data/lessons-spanish-more';
+import { buildBossLessons } from '@/data/bosses';
 import { Lesson } from '@/types/learning';
 
-export const LESSONS: Lesson[] = [
+export const BASE_LESSONS: Lesson[] = [
   // ─── Spanish ───────────────────────────────────────────────────────────────
 
   {
@@ -1040,3 +1041,6 @@ export const LESSONS: Lesson[] = [
   ...SPANISH_EXTRA_LESSONS,
   ...SPANISH_MORE_LESSONS,
 ];
+
+// Every level on the map: the lessons plus the boss levels built from them
+export const LESSONS: Lesson[] = [...BASE_LESSONS, ...buildBossLessons(BASE_LESSONS)];

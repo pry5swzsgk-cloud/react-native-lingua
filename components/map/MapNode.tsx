@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect } from "react";
+import { ReactNode, useEffect } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
   Easing,
@@ -13,7 +13,7 @@ import Animated, {
 
 import { LINE_DURATION } from "@/components/map/MapLine";
 import { colors } from "@/constants/theme";
-import { LABEL_WIDTH, NODE_SIZE } from "@/lib/mapLayout";
+import { getNodeSize, LABEL_WIDTH } from "@/lib/mapLayout";
 import { Lesson } from "@/types/learning";
 
 export type MapNodeStatus = "done" | "current" | "open";
@@ -29,12 +29,16 @@ interface MapNodeProps {
 }
 
 const NODE_WIDTH = LABEL_WIDTH;
+const FINAL_BOSS_RING = "#F5A300";
 
 // One level on the map. Every level can be tapped at any time.
 //   done    - colored ring with a check mark
 //   current - purple ring that pulses (the mascot stands next to it,
 //             see MapMascot)
 //   open    - plain ring
+// Bosses are bigger with a dark circle (purple ring for a mini boss, gold
+// ring and a soft pulse for the final boss). The circle stays centered on
+// (x, y) however big it is.
 export function MapNode({
   lesson,
   levelNumber,
@@ -44,37 +48,59 @@ export function MapNode({
   accent,
   onPress,
 }: MapNodeProps) {
-  const ringColor =
-    status === "done"
+  const bossKind = lesson.boss?.kind;
+  const size = getNodeSize(lesson);
+  const bossRing =
+    bossKind === "final" ? FINAL_BOSS_RING : colors.primary.purple;
+  const ringColor = bossKind
+    ? bossRing
+    : status === "done"
       ? accent
       : status === "current"
         ? colors.primary.purple
         : "#d1d5db";
+  const bossName = bossKind === "final" ? "Final boss" : "Mini boss";
+  const label = bossKind
+    ? `${bossName}: ${lesson.title}, ${status}`
+    : `Level ${levelNumber}: ${lesson.title}, ${status}`;
+  const subtitle = bossKind
+    ? `${bossName} · ${lesson.xpReward} XP`
+    : `Level ${levelNumber} · ${lesson.xpReward} XP`;
 
   return (
     <View
-      style={[styles.container, { left: x - NODE_WIDTH / 2, top: y - NODE_SIZE / 2 }]}
+      style={[
+        styles.container,
+        { left: x - NODE_WIDTH / 2, top: y - size / 2 },
+      ]}
     >
-      {status === "current" && <CurrentPulse />}
+      {status === "current" && <CurrentPulse size={size} />}
 
       <TouchableOpacity
         className="items-center"
         activeOpacity={0.8}
         onPress={onPress}
-        accessibilityLabel={`Level ${levelNumber}: ${lesson.title}, ${status}`}
+        accessibilityLabel={label}
         testID={`map-node-${lesson.id}`}
       >
-        <View
-          className="rounded-full bg-white items-center justify-center"
-          style={[styles.circle, { borderColor: ringColor }]}
-        >
-          <Text className="text-3xl">{lesson.icon}</Text>
-          {status === "done" && (
-            <View className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-success border-2 border-white items-center justify-center">
-              <Ionicons name="checkmark" size={13} color="#fff" />
-            </View>
-          )}
-        </View>
+        <BossPulse enabled={bossKind === "final"}>
+          <View
+            className={`rounded-full items-center justify-center ${bossKind ? "bg-[#2B2440]" : "bg-white"}`}
+            style={[
+              styles.circle,
+              { width: size, height: size, borderColor: ringColor },
+            ]}
+          >
+            <Text className={bossKind ? "text-4xl" : "text-3xl"}>
+              {lesson.icon}
+            </Text>
+            {status === "done" && (
+              <View className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-success border-2 border-white items-center justify-center">
+                <Ionicons name="checkmark" size={13} color="#fff" />
+              </View>
+            )}
+          </View>
+        </BossPulse>
 
         <View className="bg-white/95 rounded-xl px-2.5 py-1 mt-1.5 items-center max-w-full">
           <Text
@@ -83,9 +109,7 @@ export function MapNode({
           >
             {lesson.title}
           </Text>
-          <Text className="caption">
-            Level {levelNumber} · {lesson.xpReward} XP
-          </Text>
+          <Text className="caption">{subtitle}</Text>
         </View>
       </TouchableOpacity>
     </View>
@@ -94,7 +118,7 @@ export function MapNode({
 
 // The pulsing ring around the level the learner is on. It appears when
 // the line from the previous level has arrived.
-function CurrentPulse() {
+function CurrentPulse({ size }: { size: number }) {
   const pulse = useSharedValue(0); // 0 → 1, repeats
   const appear = useSharedValue(0); // 0 = hidden, 1 = shown
 
@@ -113,7 +137,50 @@ function CurrentPulse() {
     transform: [{ scale: 1 + 0.45 * pulse.get() }],
   }));
 
-  return <Animated.View style={[styles.pulse, pulseStyle]} />;
+  return (
+    <Animated.View
+      style={[
+        styles.pulse,
+        {
+          left: (NODE_WIDTH - size) / 2,
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+        },
+        pulseStyle,
+      ]}
+    />
+  );
+}
+
+// Makes the final boss grow and shrink a little (scale 1 to 1.06). Other
+// levels are shown as they are.
+function BossPulse({
+  enabled,
+  children,
+}: {
+  enabled: boolean;
+  children: ReactNode;
+}) {
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    if (!enabled) return;
+    scale.set(
+      withRepeat(
+        withTiming(1.06, { duration: 1100, easing: Easing.inOut(Easing.quad) }),
+        -1,
+        true,
+      ),
+    );
+  }, [enabled, scale]);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.get() }],
+  }));
+
+  if (!enabled) return <>{children}</>;
+  return <Animated.View style={style}>{children}</Animated.View>;
 }
 
 // Positions, animated values and transforms stay in StyleSheet (see AGENTS.md)
@@ -123,8 +190,6 @@ const styles = StyleSheet.create({
     width: NODE_WIDTH,
   },
   circle: {
-    width: NODE_SIZE,
-    height: NODE_SIZE,
     borderWidth: 5,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
@@ -135,10 +200,6 @@ const styles = StyleSheet.create({
   pulse: {
     position: "absolute",
     top: 0,
-    left: (NODE_WIDTH - NODE_SIZE) / 2,
-    width: NODE_SIZE,
-    height: NODE_SIZE,
-    borderRadius: NODE_SIZE / 2,
     backgroundColor: colors.primary.purple,
     pointerEvents: "none",
   },

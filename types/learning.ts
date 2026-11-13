@@ -80,7 +80,8 @@ export type ThemeId =
   | "money"
   | "art"
   | "history"
-  | "goals";
+  | "goals"
+  | "boss";
 
 export interface Theme {
   id: ThemeId;
@@ -90,6 +91,9 @@ export interface Theme {
   accent: string; // stronger color for lines and badges
   decor: string[]; // emojis scattered over the background
 }
+
+// A boss is a review level built from other lessons.
+export type BossKind = "mini" | "final";
 
 export interface Lesson {
   id: string;
@@ -104,6 +108,8 @@ export interface Lesson {
   phrases: Phrase[];
   activities: Activity[];
   aiTeacherPrompt?: AITeacherPrompt;
+  // Only set for boss levels: a boss is a review level built from other lessons
+  boss?: { kind: BossKind; sourceLessonIds: string[] };
 }
 
 // CEFR level of a unit: A1 = beginner, A2 = elementary, B1 = intermediate,
@@ -118,4 +124,19 @@ export interface Unit {
   description: string;
   order: number;
   lessonIds: string[];
+}
+
+// A short spoken dialog: Dax asks a question, the learner answers.
+// `keywords` are lowercase words without accents that fit most good answers.
+// `wrongReplies` are correct sentences that do not answer the question.
+export interface DialogItem {
+  id: string;
+  languageCode: LanguageCode;
+  level: UnitLevel;
+  question: string;
+  questionTranslation: string;
+  reply: string;
+  replyTranslation: string;
+  keywords: string[];
+  wrongReplies: string[];
 }

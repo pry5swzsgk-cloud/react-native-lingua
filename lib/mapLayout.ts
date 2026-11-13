@@ -10,13 +10,16 @@ import { Lesson, Unit } from "@/types/learning";
 // around between visits.
 
 export const NODE_SIZE = 72; // diameter of a level circle
+export const MINI_BOSS_SIZE = 84; // a mini boss circle
+export const FINAL_BOSS_SIZE = 96; // a final boss circle
 export const LABEL_WIDTH = 168; // a level's touch area: circle plus title
 export const MAX_MAP_WIDTH = 480; // keeps the path compact on tablets
 export const MASCOT_SIZE = 56; // the mascot's picture on the map
 const MASCOT_GAP = 6; // space between a level circle and the mascot
 const MIN_ROW_HEIGHT = 118; // smallest distance from one level to the next
 const MAX_ROW_HEIGHT = 160; // largest distance
-const UNIT_BANNER_HEIGHT = 96; // room for a unit banner
+const UNIT_BANNER_HEIGHT = 112; // room for a unit banner (with the master level button)
+const BOSS_EXTRA_GAP = 16; // extra space before and after a boss circle
 const TOP_PADDING = 8;
 const SIDE_PADDING = 6; // space between a title and the screen edge
 // Each step moves at least this share of the free width sideways, so the
@@ -44,7 +47,7 @@ function stableRandom(text: string): number {
 export interface MapNodeLayout {
   lesson: Lesson;
   unit: Unit;
-  levelNumber: number; // 1, 2, 3 … across the whole course
+  levelNumber: number; // 1, 2, 3 … across the whole course; 0 for a boss
   x: number; // center of the circle
   y: number;
 }
@@ -70,6 +73,7 @@ export function buildMapLayout(units: Unit[], width: number): MapLayout {
   const minX = LABEL_WIDTH / 2 + SIDE_PADDING;
   const maxX = Math.max(minX, width - LABEL_WIDTH / 2 - SIDE_PADDING);
   const range = maxX - minX;
+  let levelCount = 0; // bosses are not counted
   let share = 0.5; // the first level starts in the middle
 
   for (const unit of units) {
@@ -77,7 +81,7 @@ export function buildMapLayout(units: Unit[], width: number): MapLayout {
     unitLayouts.push({ unit, lessons, y });
     y += UNIT_BANNER_HEIGHT;
 
-    for (const lesson of lessons) {
+    for (const [index, lesson] of lessons.entries()) {
       if (nodes.length > 0) {
         // Roll a new sideways position, far enough from the previous one
         const roll = stableRandom(lesson.id);
@@ -92,17 +96,27 @@ export function buildMapLayout(units: Unit[], width: number): MapLayout {
       nodes.push({
         lesson,
         unit,
-        levelNumber: nodes.length + 1,
+        levelNumber: lesson.boss ? 0 : (levelCount += 1),
         x: Math.round(minX + share * range),
         y: y + NODE_SIZE / 2,
       });
+      // The bigger boss circle needs room before and after it
+      const nextIsBoss = lessons[index + 1]?.boss !== undefined;
       y +=
         MIN_ROW_HEIGHT +
-        stableRandom(lesson.id + "y") * (MAX_ROW_HEIGHT - MIN_ROW_HEIGHT);
+        stableRandom(lesson.id + "y") * (MAX_ROW_HEIGHT - MIN_ROW_HEIGHT) +
+        (lesson.boss || nextIsBoss ? BOSS_EXTRA_GAP : 0);
     }
   }
 
   return { units: unitLayouts, nodes, height: y };
+}
+
+// Diameter of a level's circle: bosses are bigger
+export function getNodeSize(lesson: Lesson): number {
+  if (lesson.boss?.kind === "final") return FINAL_BOSS_SIZE;
+  if (lesson.boss?.kind === "mini") return MINI_BOSS_SIZE;
+  return NODE_SIZE;
 }
 
 // Where the mascot stands at a level: next to the circle, on the side with
@@ -110,10 +124,11 @@ export function buildMapLayout(units: Unit[], width: number): MapLayout {
 export function getMascotSpot(
   node: { x: number; y: number },
   width: number,
+  nodeSize = NODE_SIZE,
 ): { x: number; y: number } {
   const side = node.x > width / 2 ? -1 : 1; // -1 = left of the circle
   return {
-    x: node.x + side * (NODE_SIZE / 2 + MASCOT_GAP + MASCOT_SIZE / 2),
-    y: node.y - NODE_SIZE / 2 + MASCOT_GAP + MASCOT_SIZE / 2,
+    x: node.x + side * (nodeSize / 2 + MASCOT_GAP + MASCOT_SIZE / 2),
+    y: node.y - nodeSize / 2 + MASCOT_GAP + MASCOT_SIZE / 2,
   };
 }

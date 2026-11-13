@@ -13,6 +13,8 @@ interface SpeakButtonProps {
   size?: "small" | "medium" | "large";
   // Reads at half speed and shows "0.5×" instead of the speaker icon
   slow?: boolean;
+  // Replaces the screen reader label (e.g. when the text is hidden)
+  label?: string;
 }
 
 const SIZES = {
@@ -28,6 +30,7 @@ export function SpeakButton({
   languageCode,
   size = "small",
   slow = false,
+  label,
 }: SpeakButtonProps) {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const isSpeakingRef = useRef(false);
@@ -65,10 +68,11 @@ export function SpeakButton({
       onPress={handlePress}
       accessibilityLabel={
         isSpeaking
-          ? `Stop playing ${text}`
-          : slow
-            ? `Listen slowly to ${text}`
-            : `Listen to ${text}`
+          ? label
+            ? "Stop playing"
+            : `Stop playing ${text}`
+          : (label ??
+            (slow ? `Listen slowly to ${text}` : `Listen to ${text}`))
       }
       testID={slow ? "speak-slow-button" : "speak-button"}
     >

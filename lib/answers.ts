@@ -90,3 +90,14 @@ export function checkTypedAnswer(
 
   return isClose ? "almost" : "wrong";
 }
+
+// True when the text contains one of the keywords. Capital letters, accents
+// and punctuation do not matter. A keyword must start at the beginning of a
+// word, so "cansad" matches "cansada" but "bien" does not match "tambien".
+export function containsKeyword(text: string, keywords: string[]): boolean {
+  const padded = ` ${clean(text, false)}`;
+  return keywords.some((keyword) => {
+    const key = clean(keyword, false);
+    return key !== "" && padded.includes(` ${key}`);
+  });
+}

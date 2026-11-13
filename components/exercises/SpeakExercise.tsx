@@ -7,6 +7,7 @@ import { PronunciationFeedback } from "@/components/PronunciationFeedback";
 import { SpeakButton } from "@/components/SpeakButton";
 import { colors } from "@/constants/theme";
 import { LANGUAGES } from "@/data/languages";
+import { containsKeyword } from "@/lib/answers";
 import { ExerciseResult, SpeakExerciseData } from "@/lib/exercises";
 import { comparePronunciation, PronunciationResult } from "@/lib/pronunciation";
 import { playSound } from "@/lib/sounds";
@@ -40,6 +41,18 @@ export function SpeakExercise({
   useEffect(() => () => stopRef.current?.(), []);
 
   const hasPassed = result?.passed === true;
+  // With hideText the sentence stays hidden until the first attempt
+  const showText = !exercise.hideText || result !== null;
+  // Question exercises: the learner answers in their own words
+  const question = exercise.question;
+  const languageName =
+    LANGUAGES.find((l) => l.code === languageCode)?.name ?? "the language";
+
+  // For a question the score is only "has a keyword" or not
+  function answerResult(transcript: string): PronunciationResult {
+    const passed = containsKeyword(transcript, exercise.keywords ?? []);
+    return { words: [], score: passed ? 1 : 0, passed };
+  }
 
   function handleMicPress() {
     if (isListening) {
@@ -59,7 +72,9 @@ export function SpeakExercise({
     stopRef.current = listenOnce(locale, {
       onPartial: setLiveText,
       onResult: (transcript) => {
-        const comparison = comparePronunciation(exercise.text, transcript);
+        const comparison = question
+          ? answerResult(transcript)
+          : comparePronunciation(exercise.text, transcript);
         playSound(comparison.passed ? "correct" : "wrong");
         setHeard(transcript);
         setResult(comparison);
@@ -72,26 +87,61 @@ export function SpeakExercise({
   return (
     <View className="flex-1" testID="exercise-speak">
       <View className="flex-1 px-5">
-        <Text className="h3 mb-1">Say it out loud</Text>
+        <Text className="h3 mb-1">
+          {question
+            ? "Answer the question out loud"
+            : exercise.hideText
+            ? `Say this in ${languageName}`
+            : exercise.kind === "speak-word"
+              ? "Say this word"
+              : "Say it out loud"}
+        </Text>
         <Text className="body-sm text-text-secondary mb-5">
-          Listen first if you like, then tap the mic and speak.
+          {question
+            ? "Tap the mic and answer in your own words."
+            : exercise.hideText
+            ? `Tap the mic and say the sentence in ${languageName}.`
+            : "Listen first if you like, then tap the mic and speak."}
         </Text>
 
-        <View className="bg-surface rounded-2xl px-4 py-4 flex-row items-center mb-6">
-          <View className="flex-1 mr-3">
-            <Text
-              className="font-poppins-semibold text-lg text-text-primary"
-              testID="speak-text"
-            >
-              {exercise.text}
-            </Text>
-            <Text className="caption">{exercise.pronunciation}</Text>
-            <Text className="body-sm text-text-secondary mt-1">
+        {question ? (
+          <View className="bg-surface rounded-2xl px-4 py-4 flex-row items-center mb-6">
+            <View className="flex-1 mr-3">
+              <Text
+                className="font-poppins-semibold text-lg text-text-primary"
+                testID="speak-question"
+              >
+                {question}
+              </Text>
+              <Text className="body-sm text-text-secondary mt-1">
+                {exercise.translation}
+              </Text>
+            </View>
+            <SpeakButton text={question} languageCode={languageCode} />
+          </View>
+        ) : showText ? (
+          <View className="bg-surface rounded-2xl px-4 py-4 flex-row items-center mb-6">
+            <View className="flex-1 mr-3">
+              <Text
+                className="font-poppins-semibold text-lg text-text-primary"
+                testID="speak-text"
+              >
+                {exercise.text}
+              </Text>
+              <Text className="caption">{exercise.pronunciation}</Text>
+              <Text className="body-sm text-text-secondary mt-1">
+                {exercise.translation}
+              </Text>
+            </View>
+            <SpeakButton text={exercise.text} languageCode={languageCode} />
+          </View>
+        ) : (
+          <View className="bg-surface rounded-2xl px-5 py-6 items-center mb-6">
+            <Text className="h2 text-center" testID="speak-prompt">
               {exercise.translation}
             </Text>
           </View>
-          <SpeakButton text={exercise.text} languageCode={languageCode} />
-        </View>
+        )}
 
         {!hasPassed && (
           <View className="items-center">
@@ -126,7 +176,30 @@ export function SpeakExercise({
           <Text className="body-sm text-error text-center mt-4">{error}</Text>
         )}
 
-        {result && !isListening && (
+        {result && !isListening && question && (
+          <View className="mt-5" testID="speech-result">
+            <Text className="body-sm text-text-secondary">
+              I heard: “{heard}”
+            </Text>
+            {result.passed ? (
+              <Text className="font-poppins-semibold text-sm text-success mt-1">
+                Great answer!
+              </Text>
+            ) : (
+              <Text className="body-sm text-text-secondary mt-1" testID="speak-hint">
+                Not quite. Try to answer the question.
+              </Text>
+            )}
+            <View className="bg-surface rounded-2xl px-4 py-3 flex-row items-center mt-3">
+              <Text className="flex-1 mr-3 body-md text-text-primary" testID="speak-example">
+                Example: {exercise.text}
+              </Text>
+              <SpeakButton text={exercise.text} languageCode={languageCode} />
+            </View>
+          </View>
+        )}
+
+        {result && !isListening && !question && (
           <View className="mt-5" testID="speech-result">
             <PronunciationFeedback
               sentence={exercise.text}

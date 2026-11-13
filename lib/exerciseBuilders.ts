@@ -1,0 +1,674 @@
+import { getCharacters, HIRAGANA } from "@/data/characters";
+import type { DialogItem, LanguageCode, Phrase, VocabularyItem } from "@/types/learning";
+import type {
+  ChoiceExerciseData,
+  DictationExerciseData,
+  Exercise,
+  ExerciseKind,
+  FreeTextExerciseData,
+  GapExerciseData,
+  ListenExerciseData,
+  MatchExerciseData,
+  SpeakExerciseData,
+  WordBankExerciseData,
+  WriteExerciseData,
+} from "@/lib/exercises";
+
+// Every kind of exercise has one entry in KINDS below. buildSession() in
+// lib/exercises.ts picks entries from this list and calls their build().
+
+// Kinds are sorted into groups so a session mixes different skills
+export type ExerciseGroup = "connect" | "listening" | "typing" | "choosing" | "building" | "speaking";
+
+// Everything a builder may need to make one exercise
+export interface BuildContext {
+  languageCode: LanguageCode | null;
+  inEnglish: boolean; // the learner types English instead of the target language
+  random: () => number;
+  hard: boolean;
+  words: VocabularyItem[]; // shuffled
+  phrases: Phrase[]; // shuffled
+  // Next word; wraps around so short sources still fill every exercise
+  takeWord: () => VocabularyItem;
+  // Next sentence. Each sentence is given out only once, null when none is left
+  takePhrase: () => Phrase | null;
+  // The short sentence (or expression) for the first dictation, given out
+  // only once, null when there is none or it was already used
+  takeLongDictation: () => string | null;
+  dialogs: DialogItem[]; // shuffled
+  // Next dialog entry. Each one is given out only once, null when none is left
+  takeDialog: () => DialogItem | null;
+}
+
+export interface KindSpec {
+  kind: ExerciseKind;
+  group: ExerciseGroup;
+  easy: boolean; // left out of hard sessions
+  needsSpeech: boolean; // left out when the device cannot recognise speech
+  // null = not possible with this content
+  build: (ctx: BuildContext, id: string) => Exercise | null;
+}
+
+export function shuffle<T>(items: T[], random: () => number): T[] {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+function buildMatch(ctx: BuildContext, id: string): MatchExerciseData {
+  const pairs = ctx.words.slice(0, 5).map((v) => ({ word: v.word, translation: v.translation }));
+  return {
+    type: "match",
+    kind: "match",
+    id,
+    pairs,
+    translations: shuffle(
+      pairs.map((p) => p.translation),
+      ctx.random,
+    ),
+  };
+}
+
+function buildListen(ctx: BuildContext, id: string): ListenExerciseData {
+  const word = ctx.takeWord();
+  const wrongOptions = shuffle(
+    ctx.words.map((v) => v.translation).filter((t) => t !== word.translation),
+    ctx.random,
+  ).slice(0, 3);
+  return {
+    type: "listen",
+    kind: "listen",
+    id,
+    itemKey: word.word,
+    audio: word.word,
+    answer: word.translation,
+    options: shuffle([word.translation, ...wrongOptions], ctx.random),
+  };
+}
+
+function buildWrite(ctx: BuildContext, id: string): WriteExerciseData {
+  const word = ctx.takeWord();
+  // Hard sessions show no emoji, so the picture cannot give the answer away
+  const emoji = ctx.hard ? undefined : word.emoji;
+  return ctx.inEnglish
+    ? {
+        type: "write",
+        kind: "write-word",
+        id,
+        itemKey: word.word,
+        prompt: word.word,
+        emoji,
+        pronunciation: word.pronunciation,
+        answer: word.translation,
+        answerInEnglish: true,
+      }
+    : {
+        type: "write",
+        kind: "write-word",
+        id,
+        itemKey: word.word,
+        prompt: word.translation,
+        emoji,
+        answer: word.word,
+        answerInEnglish: false,
+      };
+}
+
+const MAX_TRANSLATE_WORDS = 6;
+const MAX_TRANSLATE_ANSWER_WORDS = 8;
+const MAX_TRANSLATE_JA_CHARS = 12;
+
+// A short sentence of the target language, the learner writes it in English.
+// It does not use takePhrase(), so the speaking exercises keep their sentences.
+function buildTranslateSentence(ctx: BuildContext, id: string): WriteExerciseData | null {
+  const fitting = ctx.phrases.filter(
+    (p) =>
+      sentenceTiles(p.text).length <= MAX_TRANSLATE_WORDS &&
+      sentenceTiles(p.translation).length <= MAX_TRANSLATE_ANSWER_WORDS &&
+      // Japanese has no spaces, so limit the length in characters instead
+      (!ctx.inEnglish || [...p.text.replace(/[\s。、！？!?.,]/g, "")].length <= MAX_TRANSLATE_JA_CHARS),
+  );
+  if (fitting.length === 0) return null;
+  const phrase = fitting[Math.floor(ctx.random() * fitting.length)];
+  return {
+    type: "write",
+    kind: "translate-sentence",
+    id,
+    itemKey: phrase.text,
+    prompt: phrase.text,
+    answer: phrase.translation,
+    answerInEnglish: true,
+  };
+}
+
+function buildDictation(ctx: BuildContext, id: string): DictationExerciseData {
+  // The first dictation is a short sentence (not for Japanese, where the
+  // learner types the English meaning of a word)
+  const sentence = ctx.inEnglish ? null : ctx.takeLongDictation();
+  if (sentence) {
+    return {
+      type: "dictation",
+      kind: "dictation",
+      id,
+      itemKey: sentence,
+      audio: sentence,
+      answer: sentence,
+      answerInEnglish: false,
+    };
+  }
+  const item = ctx.takeWord();
+  return {
+    type: "dictation",
+    kind: "dictation",
+    id,
+    itemKey: item.word,
+    audio: item.word,
+    answer: ctx.inEnglish ? item.translation : item.word,
+    answerInEnglish: ctx.inEnglish,
+  };
+}
+
+function buildSpeak(ctx: BuildContext, id: string): SpeakExerciseData | null {
+  const phrase = ctx.takePhrase();
+  if (!phrase) return null;
+  return {
+    type: "speak",
+    kind: "speak-sentence",
+    id,
+    itemKey: phrase.text,
+    text: phrase.text,
+    pronunciation: phrase.pronunciation,
+    translation: phrase.translation,
+  };
+}
+
+function buildSpeakWord(ctx: BuildContext, id: string): SpeakExerciseData {
+  const word = ctx.takeWord();
+  return {
+    type: "speak",
+    kind: "speak-word",
+    id,
+    itemKey: word.word,
+    text: word.word,
+    pronunciation: word.pronunciation,
+    translation: word.translation,
+  };
+}
+
+// The learner sees only the English meaning and says the sentence
+function buildSpeakTranslate(ctx: BuildContext, id: string): SpeakExerciseData | null {
+  const phrase = ctx.takePhrase();
+  if (!phrase) return null;
+  return {
+    type: "speak",
+    kind: "speak-translate",
+    id,
+    itemKey: phrase.text,
+    text: phrase.text,
+    pronunciation: phrase.pronunciation,
+    translation: phrase.translation,
+    hideText: true,
+  };
+}
+
+// Dax asks a question, the learner picks the best reply
+function buildDialog(ctx: BuildContext, id: string): ChoiceExerciseData | null {
+  const dialog = ctx.takeDialog();
+  if (!dialog) return null;
+  return {
+    type: "choice",
+    kind: "dialog",
+    id,
+    instruction: "Choose the best reply",
+    audio: dialog.question,
+    context: [{ speaker: "Dax", text: dialog.question }],
+    options: shuffle([dialog.reply, ...dialog.wrongReplies], ctx.random).map((label) => ({ label })),
+    answer: dialog.reply,
+    layout: "list",
+  };
+}
+
+// The learner answers a question out loud; the reply is only an example
+function buildSpeakAnswer(ctx: BuildContext, id: string): SpeakExerciseData | null {
+  const dialog = ctx.takeDialog();
+  if (!dialog) return null;
+  return {
+    type: "speak",
+    kind: "speak-answer",
+    id,
+    text: dialog.reply,
+    pronunciation: "",
+    translation: dialog.questionTranslation,
+    question: dialog.question,
+    keywords: dialog.keywords,
+  };
+}
+
+// The learner answers a question in their own words
+function buildFreeText(ctx: BuildContext, id: string): FreeTextExerciseData | null {
+  const dialog = ctx.takeDialog();
+  if (!dialog) return null;
+  return {
+    type: "freetext",
+    kind: "free-text",
+    id,
+    question: dialog.question,
+    questionTranslation: dialog.questionTranslation,
+    keywords: dialog.keywords,
+    sample: dialog.reply,
+    sampleTranslation: dialog.replyTranslation,
+  };
+}
+
+// Different values only, first one wins
+function unique(items: string[]): string[] {
+  return [...new Set(items)];
+}
+
+// The right answer plus up to 3 wrong ones (all different), shuffled.
+// null when there are fewer than 2 different options.
+function pickOptions(
+  answer: string,
+  wrong: string[],
+  random: () => number,
+): string[] | null {
+  const others = shuffle(unique(wrong).filter((label) => label !== answer), random).slice(0, 3);
+  return others.length === 0 ? null : shuffle([answer, ...others], random);
+}
+
+function buildChoice(ctx: BuildContext, id: string): ChoiceExerciseData | null {
+  const word = ctx.takeWord();
+  const toWord = ctx.random() < 0.5; // meaning -> word, otherwise word -> meaning
+  const answer = toWord ? word.word : word.translation;
+  // Words with the same meaning would be a second right answer
+  const rivals = ctx.words.filter((v) => v.translation !== word.translation);
+  const labels = pickOptions(
+    answer,
+    toWord ? rivals.map((v) => v.word) : ctx.words.map((v) => v.translation),
+    ctx.random,
+  );
+  if (!labels) return null;
+  return {
+    type: "choice",
+    kind: "choice",
+    id,
+    itemKey: word.word,
+    instruction: toWord ? "Which word fits?" : "What does it mean?",
+    prompt: toWord ? word.translation : word.word,
+    promptEmoji: word.emoji || undefined,
+    options: labels.map((label) => ({ label })),
+    answer,
+    layout: "list",
+  };
+}
+
+function buildPicture(ctx: BuildContext, id: string): ChoiceExerciseData | null {
+  // Only words with their own emoji and their own meaning can be a picture
+  const seenEmojis = new Set<string>();
+  const seenMeanings = new Set<string>();
+  const pictures = ctx.words.filter((v) => {
+    const emoji = v.emoji?.trim();
+    if (!emoji || seenEmojis.has(emoji) || seenMeanings.has(v.translation)) return false;
+    seenEmojis.add(emoji);
+    seenMeanings.add(v.translation);
+    return true;
+  });
+  if (pictures.length < 4) return null;
+  const word = pictures[Math.floor(ctx.random() * pictures.length)];
+  const others = shuffle(
+    pictures.filter((v) => v !== word),
+    ctx.random,
+  ).slice(0, 3);
+  return {
+    type: "choice",
+    kind: "picture",
+    id,
+    itemKey: word.word,
+    instruction: "Which picture fits?",
+    prompt: word.word,
+    options: shuffle([word, ...others], ctx.random).map((v) => ({
+      label: v.translation,
+      emoji: v.emoji?.trim(),
+    })),
+    answer: word.translation,
+    layout: "grid",
+  };
+}
+
+const MAX_HEARD_SENTENCE_WORDS = 6;
+
+function buildAudioMatch(ctx: BuildContext, id: string): ChoiceExerciseData | null {
+  const texts = unique(ctx.phrases.map((p) => p.text));
+  let audio: string;
+  let labels: string[] | null;
+  if (texts.length >= 2 && ctx.random() < 0.5) {
+    // A short sentence, the options are other sentences
+    const short = texts.filter((t) => t.split(/\s+/).length <= MAX_HEARD_SENTENCE_WORDS);
+    const pool = short.length > 0 ? short : texts;
+    audio = pool[Math.floor(ctx.random() * pool.length)];
+    labels = pickOptions(audio, texts, ctx.random);
+  } else {
+    audio = ctx.takeWord().word;
+    labels = pickOptions(
+      audio,
+      ctx.words.map((v) => v.word),
+      ctx.random,
+    );
+  }
+  if (!labels) return null;
+  return {
+    type: "choice",
+    kind: "audio-match",
+    id,
+    itemKey: audio,
+    instruction: "What do you hear?",
+    audio,
+    options: labels.map((label) => ({ label })),
+    answer: audio,
+    layout: "list",
+  };
+}
+
+function buildTrueFalse(ctx: BuildContext, id: string): ChoiceExerciseData {
+  const word = ctx.takeWord();
+  const wrong = ctx.words.filter((v) => v.translation !== word.translation);
+  // Half of the statements are false (if there is another meaning to use)
+  const isTrue = wrong.length === 0 || ctx.random() < 0.5;
+  const shown = isTrue ? word.translation : wrong[Math.floor(ctx.random() * wrong.length)].translation;
+  return {
+    type: "choice",
+    kind: "true-false",
+    id,
+    itemKey: word.word,
+    instruction: "True or false?",
+    prompt: `\u201C${word.word}\u201D means \u201C${shown}\u201D`,
+    options: [{ label: "True" }, { label: "False" }],
+    answer: isTrue ? "True" : "False",
+    layout: "grid",
+  };
+}
+
+// Tiles are the words of a sentence without punctuation at their edges:
+// "¿Cómo estás?" -> ["Cómo", "estás"]. Empty parts are dropped.
+function sentenceTiles(text: string): string[] {
+  return text
+    .split(/\s+/)
+    .map((part) => part.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ""))
+    .filter((part) => part.length > 0);
+}
+
+// Up to `count` wrong tiles taken from the given texts. None may equal a
+// word of the answer (ignoring case) and all are different.
+function pickDistractors(texts: string[], answer: string[], count: number, random: () => number): string[] {
+  const taken = new Set(answer.map((tile) => tile.toLowerCase()));
+  const pool: string[] = [];
+  for (const tile of shuffle(texts.flatMap(sentenceTiles), random)) {
+    const key = tile.toLowerCase();
+    if (taken.has(key)) continue;
+    taken.add(key);
+    pool.push(tile);
+    if (pool.length === count) break;
+  }
+  return pool;
+}
+
+const sameOrder = (a: string[], b: string[]) => a.join(" ").toLowerCase() === b.join(" ").toLowerCase();
+
+function buildWordBank(ctx: BuildContext, id: string): WordBankExerciseData | null {
+  const fitting = ctx.phrases.filter((p) => {
+    const count = sentenceTiles(p.translation).length;
+    return count >= 2 && count <= 9;
+  });
+  if (fitting.length === 0) return null;
+  const phrase = fitting[Math.floor(ctx.random() * fitting.length)];
+  const answer = sentenceTiles(phrase.translation);
+  const others = [
+    ...ctx.phrases.filter((p) => p !== phrase).map((p) => p.translation),
+    ...ctx.words.map((v) => v.translation),
+  ];
+  const distractors = pickDistractors(others, answer, 3, ctx.random);
+  return {
+    type: "wordbank",
+    kind: "word-bank",
+    id,
+    itemKey: phrase.text,
+    instruction: "Translate this sentence",
+    prompt: phrase.text,
+    audio: phrase.text,
+    tiles: shuffle([...answer, ...distractors], ctx.random),
+    answer,
+    solution: phrase.translation,
+  };
+}
+
+// A random sentence with a word count in range (null if none has).
+// word-bank, order and tap-heard do not use takePhrase(), so the speaking
+// exercises keep their sentences.
+function pickPhraseWithWords(ctx: BuildContext, min: number, max: number) {
+  const fitting = ctx.phrases
+    .map((phrase) => ({ phrase, answer: sentenceTiles(phrase.text) }))
+    .filter((item) => item.answer.length >= min && item.answer.length <= max);
+  return fitting.length > 0 ? fitting[Math.floor(ctx.random() * fitting.length)] : null;
+}
+
+function buildOrder(ctx: BuildContext, id: string): WordBankExerciseData | null {
+  if (ctx.inEnglish) return null;
+  const found = pickPhraseWithWords(ctx, 3, 8);
+  if (!found) return null;
+  const { phrase, answer } = found;
+  // Shuffle until the order is wrong (impossible if all words are equal)
+  let tiles = shuffle(answer, ctx.random);
+  for (let tries = 0; tries < 20 && sameOrder(tiles, answer); tries++) {
+    tiles = shuffle(answer, ctx.random);
+  }
+  if (sameOrder(tiles, answer)) tiles = [...answer].reverse();
+  if (sameOrder(tiles, answer)) return null;
+  return {
+    type: "wordbank",
+    kind: "order",
+    id,
+    itemKey: phrase.text,
+    instruction: "Put the words in the right order",
+    prompt: phrase.translation,
+    tiles,
+    answer,
+    solution: phrase.text,
+  };
+}
+
+function buildTapHeard(ctx: BuildContext, id: string): WordBankExerciseData | null {
+  if (ctx.inEnglish) return null;
+  const found = pickPhraseWithWords(ctx, 2, 8);
+  if (!found) return null;
+  const { phrase, answer } = found;
+  const others = [
+    ...ctx.phrases.filter((p) => p !== phrase).map((p) => p.text),
+    ...ctx.words.map((v) => v.word),
+  ];
+  const distractors = pickDistractors(others, answer, 3, ctx.random);
+  return {
+    type: "wordbank",
+    kind: "tap-heard",
+    id,
+    itemKey: phrase.text,
+    instruction: "Tap what you hear",
+    audio: phrase.text,
+    tiles: shuffle([...answer, ...distractors], ctx.random),
+    answer,
+    solution: phrase.text,
+  };
+}
+
+// Articles are too easy to be the missing word
+const ARTICLES = new Set(["el", "la", "un", "una", "le", "les", "der", "die", "das"]);
+
+// Where the gap word sits in the sentence: text before it and after it keep
+// their punctuation ("¿Dónde está el baño?" -> "¿Dónde está el " + "baño" + "?")
+function gapCandidates(text: string): { word: string; before: string; after: string }[] {
+  const result: { word: string; before: string; after: string }[] = [];
+  for (const match of text.matchAll(/\S+/g)) {
+    const token = match[0];
+    const lead = token.match(/^[^\p{L}\p{N}]*/u)?.[0].length ?? 0;
+    const word = token.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
+    if (!word) continue;
+    const start = (match.index ?? 0) + lead;
+    result.push({ word, before: text.slice(0, start), after: text.slice(start + word.length) });
+  }
+  return result;
+}
+
+function buildGap(ctx: BuildContext, id: string, type: boolean): GapExerciseData | null {
+  if (ctx.inEnglish) return null;
+  const sentences = ctx.phrases.filter((p) => sentenceTiles(p.text).length >= 3);
+  if (sentences.length === 0) return null;
+  const phrase = sentences[Math.floor(ctx.random() * sentences.length)];
+
+  // Words that are part of a vocabulary item of the source
+  const known = new Set(
+    ctx.words.flatMap((v) => sentenceTiles(v.word).map((w) => w.toLowerCase())),
+  );
+  const candidates = gapCandidates(phrase.text);
+  const preferred = candidates.filter(
+    (c) => c.word.length >= 3 && !ARTICLES.has(c.word.toLowerCase()) && known.has(c.word.toLowerCase()),
+  );
+  const long = candidates.filter((c) => c.word.length >= 4);
+  let pool = preferred;
+  if (pool.length === 0 && long.length > 0) {
+    const longest = Math.max(...long.map((c) => c.word.length));
+    pool = long.filter((c) => c.word.length === longest);
+  }
+  if (pool.length === 0) return null;
+  const gap = pool[Math.floor(ctx.random() * pool.length)];
+
+  let options: string[] = [];
+  if (!type) {
+    // Wrong words: other sentences and vocabulary, at least 3 letters
+    const taken = new Set([gap.word.toLowerCase()]);
+    const wrong: string[] = [];
+    const texts = [...ctx.phrases.filter((p) => p !== phrase).map((p) => p.text), ...ctx.words.map((v) => v.word)];
+    for (const word of shuffle(texts.flatMap(sentenceTiles), ctx.random)) {
+      if (word.length < 3 || taken.has(word.toLowerCase())) continue;
+      taken.add(word.toLowerCase());
+      wrong.push(word);
+      if (wrong.length === 3) break;
+    }
+    if (wrong.length < 2) return null;
+    options = shuffle([gap.word, ...wrong], ctx.random);
+  }
+  return {
+    type: "gap",
+    kind: type ? "gap-type" : "gap-choose",
+    id,
+    itemKey: phrase.text,
+    before: gap.before,
+    after: gap.after,
+    translation: phrase.translation,
+    answer: gap.word,
+    options,
+    full: phrase.text,
+  };
+}
+
+const buildGapChoose = (ctx: BuildContext, id: string) => buildGap(ctx, id, false);
+const buildGapType = (ctx: BuildContext, id: string) => buildGap(ctx, id, true);
+
+// Japanese only: which sound is this character, or which character is this sound
+function buildCharacter(ctx: BuildContext, id: string): ChoiceExerciseData | null {
+  if (ctx.languageCode !== "ja") return null;
+  const all = getCharacters(ctx.languageCode);
+  // Prefer characters that appear in the words of this source
+  const text = ctx.words.map((v) => v.word).join("");
+  const seen = all.filter((c) => text.includes(c.char));
+  const pool = seen.length > 0 ? seen : all;
+  const target = pool[Math.floor(ctx.random() * pool.length)];
+  // Every romaji is unique, so different characters never share a sound
+  const others = shuffle(
+    all.filter((c) => c.char !== target.char),
+    ctx.random,
+  ).slice(0, 3);
+  const choices = shuffle([target, ...others], ctx.random);
+  if (ctx.random() < 0.5) {
+    return {
+      type: "choice",
+      kind: "character",
+      id,
+      instruction: "Which sound is this?",
+      prompt: target.char,
+      options: choices.map((c) => ({ label: c.romaji })),
+      answer: target.romaji,
+      layout: "list",
+    };
+  }
+  return {
+    type: "choice",
+    kind: "character",
+    id,
+    instruction: "Which character is this?",
+    prompt: target.romaji,
+    options: choices.map((c) => ({ label: c.char })),
+    answer: target.char,
+    layout: "grid",
+  };
+}
+
+const HIRAGANA_CHARS = new Set(HIRAGANA.map((c) => c.char));
+
+// The word without spaces and punctuation, or null if it is not only Hiragana
+function pureHiragana(word: string): string[] | null {
+  const chars = [...word.replace(/[\s。、！？!?.,]/g, "")];
+  if (chars.length < 2 || chars.length > 8) return null;
+  return chars.every((c) => HIRAGANA_CHARS.has(c)) ? chars : null;
+}
+
+// Japanese only: build a word from Hiragana tiles
+function buildCompose(ctx: BuildContext, id: string): WordBankExerciseData | null {
+  if (ctx.languageCode !== "ja") return null;
+  const fitting = ctx.words.filter((v) => pureHiragana(v.word) !== null);
+  if (fitting.length === 0) return null;
+  const word = fitting[Math.floor(ctx.random() * fitting.length)];
+  const answer = pureHiragana(word.word) ?? [];
+  const extra = shuffle(
+    HIRAGANA.map((c) => c.char).filter((c) => !answer.includes(c)),
+    ctx.random,
+  ).slice(0, 3);
+  return {
+    type: "wordbank",
+    kind: "compose",
+    id,
+    itemKey: word.word,
+    instruction: "Build the word",
+    prompt: `${word.translation} (${word.pronunciation})`,
+    audio: word.word,
+    tiles: shuffle([...answer, ...extra], ctx.random),
+    answer,
+    solution: word.word,
+  };
+}
+
+export const KINDS: KindSpec[] = [
+  { kind: "match", group: "connect", easy: true, needsSpeech: false, build: buildMatch },
+  { kind: "listen", group: "listening", easy: true, needsSpeech: false, build: buildListen },
+  { kind: "choice", group: "choosing", easy: true, needsSpeech: false, build: buildChoice },
+  { kind: "picture", group: "choosing", easy: true, needsSpeech: false, build: buildPicture },
+  { kind: "audio-match", group: "listening", easy: false, needsSpeech: false, build: buildAudioMatch },
+  { kind: "true-false", group: "choosing", easy: true, needsSpeech: false, build: buildTrueFalse },
+  { kind: "write-word", group: "typing", easy: false, needsSpeech: false, build: buildWrite },
+  { kind: "translate-sentence", group: "typing", easy: false, needsSpeech: false, build: buildTranslateSentence },
+  { kind: "dictation", group: "listening", easy: false, needsSpeech: false, build: buildDictation },
+  { kind: "speak-sentence", group: "speaking", easy: false, needsSpeech: true, build: buildSpeak },
+  { kind: "speak-word", group: "speaking", easy: false, needsSpeech: true, build: buildSpeakWord },
+  { kind: "speak-translate", group: "speaking", easy: false, needsSpeech: true, build: buildSpeakTranslate },
+  { kind: "dialog", group: "choosing", easy: false, needsSpeech: false, build: buildDialog },
+  { kind: "speak-answer", group: "speaking", easy: false, needsSpeech: true, build: buildSpeakAnswer },
+  { kind: "word-bank", group: "building", easy: true, needsSpeech: false, build: buildWordBank },
+  { kind: "order", group: "building", easy: false, needsSpeech: false, build: buildOrder },
+  { kind: "tap-heard", group: "listening", easy: false, needsSpeech: false, build: buildTapHeard },
+  { kind: "gap-choose", group: "choosing", easy: true, needsSpeech: false, build: buildGapChoose },
+  { kind: "gap-type", group: "typing", easy: false, needsSpeech: false, build: buildGapType },
+  { kind: "free-text", group: "typing", easy: false, needsSpeech: false, build: buildFreeText },
+  { kind: "character", group: "choosing", easy: false, needsSpeech: false, build: buildCharacter },
+  { kind: "compose", group: "building", easy: false, needsSpeech: false, build: buildCompose },
+];
