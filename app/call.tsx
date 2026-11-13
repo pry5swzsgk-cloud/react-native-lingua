@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
   cancelAnimation,
@@ -233,10 +233,52 @@ function ActiveCall({ chat, speechLocale, onHangUp }: ActiveCallProps) {
   const [captionsOn, setCaptionsOn] = useState(true);
   const [isTalking, setIsTalking] = useState(false);
   const bob = useSharedValue(0); // 0 … 1
+  // The speech check in useVoiceInput runs in an effect, so wait for it
+  const [checked, setChecked] = useState(false);
+  useEffect(() => setChecked(true), []);
+  // Microphone results count only for the latest listening and only while
+  // the call is on (they can arrive late after stopping)
+  const activeRef = useRef(true);
+  const listenTokenRef = useRef(0);
+  useEffect(() => {
+    activeRef.current = true;
+    return () => {
+      activeRef.current = false;
+    };
+  }, []);
 
   const lastDax = getLastDax(chat);
   const lastDaxId = lastDax?.id ?? null;
   const lastDaxLength = lastDax?.text.length ?? 0;
+
+  // Stops the microphone and drops its result
+  function discardListening() {
+    listenTokenRef.current += 1;
+    if (voice.isListening) voice.toggle(speechLocale, () => {});
+  }
+
+  function handleMic() {
+    // Tapping while listening only stops: that result is still wanted
+    const token = voice.isListening
+      ? listenTokenRef.current
+      : ++listenTokenRef.current;
+    voice.toggle(speechLocale, (text) => {
+      if (!activeRef.current || token !== listenTokenRef.current) return;
+      chat.send(text, false);
+    });
+  }
+
+  function handleNewTopic() {
+    discardListening();
+    chat.newTopic();
+  }
+
+  function handleHangUpPress() {
+    activeRef.current = false;
+    discardListening();
+    stopSpeaking();
+    onHangUp();
+  }
 
   // Call timer
   useEffect(() => {
@@ -321,7 +363,7 @@ function ActiveCall({ chat, speechLocale, onHangUp }: ActiveCallProps) {
           </View>
         )}
 
-        {voice.isSupported === false && (
+        {checked && !voice.isSupported && (
           <View className="items-center mb-4" testID="call-no-speech">
             <Text className="body-sm text-white/80 text-center">
               This browser has no speech recognition. Use the AI Teacher tab to
@@ -349,7 +391,7 @@ function ActiveCall({ chat, speechLocale, onHangUp }: ActiveCallProps) {
             <TouchableOpacity
               className="w-14 h-14 rounded-full bg-white/15 items-center justify-center"
               activeOpacity={0.7}
-              onPress={chat.newTopic}
+              onPress={handleNewTopic}
               accessibilityLabel="New topic"
               testID="call-topic-button"
             >
@@ -362,9 +404,7 @@ function ActiveCall({ chat, speechLocale, onHangUp }: ActiveCallProps) {
             <TouchableOpacity
               className={`w-20 h-20 rounded-full items-center justify-center ${voice.isListening ? "bg-[#22C55E]" : "bg-lingua-purple"}`}
               activeOpacity={0.8}
-              onPress={() =>
-                voice.toggle(speechLocale, (text) => chat.send(text, false))
-              }
+              onPress={handleMic}
               accessibilityLabel={voice.isListening ? "Stop listening" : "Speak"}
               testID="call-mic-button"
             >
@@ -380,7 +420,7 @@ function ActiveCall({ chat, speechLocale, onHangUp }: ActiveCallProps) {
             <TouchableOpacity
               className="w-14 h-14 rounded-full bg-[#EF4444] items-center justify-center"
               activeOpacity={0.8}
-              onPress={onHangUp}
+              onPress={handleHangUpPress}
               accessibilityLabel="Hang up"
               testID="call-hangup-button"
             >

@@ -11,9 +11,6 @@ import { countMistakes } from "@/lib/mistakes";
 import { useLanguageStore } from "@/store/languageStore";
 import { useLearningStore } from "@/store/learningStore";
 
-// Same dark color as the call screen
-const CALL_BACKGROUND = "#1B1730";
-
 // The practice overview: trainings, a call with Dax and all
 // stories, radio episodes, adventures and role plays.
 export default function PracticeScreen() {
@@ -108,8 +105,7 @@ export default function PracticeScreen() {
               </Text>
               <TouchableOpacity
                 activeOpacity={0.85}
-                className="flex-row items-center rounded-[20px] p-4 mb-3"
-                style={{ backgroundColor: CALL_BACKGROUND }}
+                className="flex-row items-center rounded-[20px] p-4 mb-3 bg-[#1B1730]"
                 testID="practice-call"
                 onPress={() => router.push("/call")}
               >

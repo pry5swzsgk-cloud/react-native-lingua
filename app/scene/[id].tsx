@@ -17,6 +17,7 @@ import { images } from "@/constants/images";
 import { colors } from "@/constants/theme";
 import { LANGUAGES } from "@/data/languages";
 import { getScene } from "@/data/scenes";
+import { shuffle } from "@/lib/exerciseBuilders";
 import { comparePronunciation } from "@/lib/pronunciation";
 import { playSound } from "@/lib/sounds";
 import { speak, stopSpeaking } from "@/lib/speech";
@@ -26,7 +27,7 @@ import {
 } from "@/lib/speechRecognition";
 import { useLearningHydrated, useLearningStore } from "@/store/learningStore";
 import { LanguageCode } from "@/types/learning";
-import { SceneKind } from "@/types/scenes";
+import { Scene, SceneKind } from "@/types/scenes";
 
 // What the learner did on one question / reply step
 interface Answer {
@@ -41,6 +42,19 @@ const KIND_NAMES: Record<SceneKind, string> = {
   adventure: "Adventure",
   roleplay: "Roleplay",
 };
+
+// A shuffled order of the options for each question / reply step. In the
+// data the right answer is always first, so the player mixes them up.
+function shuffleOptionOrders(scene: Scene | undefined) {
+  const orders: Record<number, number[]> = {};
+  scene?.steps.forEach((step, index) => {
+    if (step.type === "question" || step.type === "reply") {
+      const positions = step.options.map((_, position) => position);
+      orders[index] = shuffle(positions, Math.random);
+    }
+  });
+  return orders;
+}
 
 // Speech bubble for a line in the target language
 function LineBubble({
@@ -126,6 +140,10 @@ export default function SceneScreen() {
   const [answers, setAnswers] = useState<Record<number, Answer>>({});
   const [xp, setXp] = useState<number | null>(null);
   const [round, setRound] = useState(0);
+  // Order of the options per step, new for every round
+  const [optionOrders, setOptionOrders] = useState(() =>
+    shuffleOptionOrders(scene),
+  );
   const [showTranscript, setShowTranscript] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   // Roleplay "Say it": optional speaking of the chosen reply
@@ -134,8 +152,11 @@ export default function SceneScreen() {
   const [said, setSaid] = useState<
     Record<number, { heard: string; passed: boolean }>
   >({});
-  const [sayError, setSayError] = useState("");
+  // Speech recognition error per step
+  const [sayErrors, setSayErrors] = useState<Record<number, string>>({});
   const stopListeningRef = useRef<(() => void) | null>(null);
+  // Each listening gets a number; results of an older one are ignored
+  const listenTokenRef = useRef(0);
   // XP is given only once per round, even after a double tap
   const finishedRef = useRef(false);
 
@@ -151,6 +172,7 @@ export default function SceneScreen() {
   useEffect(() => {
     return () => {
       stopSpeaking();
+      listenTokenRef.current += 1;
       stopListeningRef.current?.();
     };
   }, []);
@@ -246,16 +268,23 @@ export default function SceneScreen() {
       stopListeningRef.current?.();
       return;
     }
+    // Only one listening at a time: its late result is dropped
+    if (listeningStep !== null) {
+      listenTokenRef.current += 1;
+      stopListeningRef.current?.();
+    }
+    const token = ++listenTokenRef.current;
     const locale =
       LANGUAGES.find((l) => l.code === scene.languageCode)?.speechLocale ??
       "en-US";
     // The microphone must not hear the voice reading the sentence
     stopSpeaking();
     setListeningStep(index);
-    setSayError("");
+    setSayErrors((prev) => ({ ...prev, [index]: "" }));
     stopListeningRef.current = listenOnce(locale, {
       onPartial: () => {},
       onResult: (transcript) => {
+        if (token !== listenTokenRef.current) return;
         const comparison = comparePronunciation(text, transcript);
         playSound(comparison.passed ? "correct" : "wrong");
         setSaid((prev) => ({
@@ -263,14 +292,21 @@ export default function SceneScreen() {
           [index]: { heard: transcript, passed: comparison.passed },
         }));
       },
-      onError: setSayError,
-      onEnd: () => setListeningStep(null),
+      onError: (message) => {
+        if (token !== listenTokenRef.current) return;
+        setSayErrors((prev) => ({ ...prev, [index]: message }));
+      },
+      onEnd: () => {
+        if (token === listenTokenRef.current) setListeningStep(null);
+      },
     }).stop;
   }
 
   function handleContinue() {
     if (!scene) return;
+    listenTokenRef.current += 1;
     stopListeningRef.current?.();
+    setListeningStep(null);
     if (shown < total) {
       setShown(shown + 1);
       return;
@@ -290,9 +326,13 @@ export default function SceneScreen() {
 
   function handlePlayAgain() {
     stopSpeaking();
+    listenTokenRef.current += 1;
+    stopListeningRef.current?.();
+    setListeningStep(null);
     setAnswers({});
     setSaid({});
-    setSayError("");
+    setSayErrors({});
+    setOptionOrders(shuffleOptionOrders(scene));
     setShown(1);
     setXp(null);
     finishedRef.current = false;
@@ -423,8 +463,8 @@ export default function SceneScreen() {
             <Text className="font-poppins-semibold text-base text-text-primary mb-2">
               {step.question}
             </Text>
-            {step.options.map((option) =>
-              renderOption(index, option, step.answer, false),
+            {(optionOrders[index] ?? []).map((position) =>
+              renderOption(index, step.options[position], step.answer, false),
             )}
           </View>
         );
@@ -442,8 +482,13 @@ export default function SceneScreen() {
               {step.prompt}
             </Text>
             {!chosen &&
-              step.options.map((option) =>
-                renderOption(index, option.text, step.answer, true),
+              (optionOrders[index] ?? []).map((position) =>
+                renderOption(
+                  index,
+                  step.options[position].text,
+                  step.answer,
+                  true,
+                ),
               )}
             {!chosen && feedback && (
               <Text
@@ -488,9 +533,9 @@ export default function SceneScreen() {
                           : `I heard: ${said[index].heard}. Try again or continue.`}
                       </Text>
                     )}
-                    {sayError !== "" && listeningStep !== index && (
+                    {(sayErrors[index] ?? "") !== "" && listeningStep !== index && (
                       <Text className="font-poppins-regular text-xs text-error mt-1 text-right">
-                        {sayError}
+                        {sayErrors[index]}
                       </Text>
                     )}
                   </View>

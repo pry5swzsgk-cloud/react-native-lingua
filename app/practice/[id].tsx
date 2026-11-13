@@ -54,6 +54,8 @@ export default function PracticeScreen() {
   const [exercises, setExercises] = useState<Exercise[] | null>(null);
   // Items answered wrong in this session (a mistake is saved once)
   const wrongKeys = useRef(new Set<string>());
+  // XP is given only once per session, even after a double tap
+  const finishedRef = useRef(false);
   // Set when the session is finished: the XP it gave, whether the
   // lesson was done before and the session stats. null = still running.
   const [result, setResult] = useState<{
@@ -66,6 +68,7 @@ export default function PracticeScreen() {
   useEffect(() => {
     if (!lesson) return;
     wrongKeys.current.clear();
+    finishedRef.current = false;
     const canSpeak = isSpeechRecognitionSupported();
     if (lesson.boss) {
       // Boss levels: a longer, harder session without the easy exercise types
@@ -101,7 +104,8 @@ export default function PracticeScreen() {
   }
 
   function handleFinish(stats: { total: number; mistakes: number }) {
-    if (!lesson) return;
+    if (!lesson || finishedRef.current) return;
+    finishedRef.current = true;
 
     // Everything is solved: the lesson counts as complete now
     playSound("complete");
