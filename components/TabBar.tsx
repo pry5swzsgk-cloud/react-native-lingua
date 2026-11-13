@@ -30,7 +30,7 @@ const TABS: TabConfig[] = [
   { label: "Home", icon: "home-outline", activeIcon: "home" },
   { label: "Learn", icon: "book-outline", activeIcon: "book" },
   { label: "AI Teacher", icon: "sparkles-outline", activeIcon: "sparkles" },
-  { label: "Chat", icon: "chatbubbles-outline", activeIcon: "chatbubbles" },
+  { label: "Practice", icon: "barbell-outline", activeIcon: "barbell" },
   { label: "Profile", icon: "person-outline", activeIcon: "person" },
 ];
 
