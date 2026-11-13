@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
 import { ExerciseFooter } from "@/components/exercises/ExerciseFooter";
+import { useMascotReaction } from "@/components/exercises/PeekingMascot";
 import { ExerciseResult, MatchExerciseData } from "@/lib/exercises";
 import { playSound } from "@/lib/sounds";
 
@@ -13,6 +14,7 @@ interface MatchExerciseProps {
 // Tap a word on the left, then its meaning on the right. Right pairs turn
 // green and stay, a wrong pair flashes red and can be tried again.
 export function MatchExercise({ exercise, onDone }: MatchExerciseProps) {
+  const react = useMascotReaction();
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [matchedWords, setMatchedWords] = useState<string[]>([]);
   const [wrongPair, setWrongPair] = useState<{
@@ -36,6 +38,7 @@ export function MatchExercise({ exercise, onDone }: MatchExerciseProps) {
       setWrongPair(null);
     } else {
       playSound("wrong");
+      react("sad");
       setWrongPair({ word: selectedWord, translation });
       // Clear the red flash after a moment
       setTimeout(() => setWrongPair(null), 700);

@@ -20,6 +20,7 @@ import { ChoiceExercise } from "@/components/exercises/ChoiceExercise";
 import { FreeTextExercise } from "@/components/exercises/FreeTextExercise";
 import { GapExercise } from "@/components/exercises/GapExercise";
 import { ListenExercise } from "@/components/exercises/ListenExercise";
+import { MascotReactionProvider, PeekingMascot } from "@/components/exercises/PeekingMascot";
 import { MatchExercise } from "@/components/exercises/MatchExercise";
 import { SpeakExercise } from "@/components/exercises/SpeakExercise";
 import { TypeExercise } from "@/components/exercises/TypeExercise";
@@ -114,6 +115,7 @@ export function ExerciseSession({
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
+        <MascotReactionProvider>
         {/* Header: close button and progress */}
         {/* (hidden when empty: the hint below has its own close button) */}
         <View className={`flex-row items-center gap-3 px-5 pt-2 pb-5 ${total === 0 ? "hidden" : ""}`}>
@@ -162,6 +164,13 @@ export function ExerciseSession({
             {solved}/{total}
           </Text>
         </View>
+
+        {/* Strip where the mascot peeks over the exercise */}
+        {total > 0 && (
+          <View className="h-14 items-end px-5">
+            <PeekingMascot />
+          </View>
+        )}
 
         {total === 0 ? (
           <View className="flex-1 items-center justify-center px-8 gap-6" testID="session-empty">
@@ -234,6 +243,7 @@ export function ExerciseSession({
             onDone={handleDone}
           />
         ) : null}
+        </MascotReactionProvider>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

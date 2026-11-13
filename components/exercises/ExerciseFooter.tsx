@@ -1,5 +1,7 @@
+import { useEffect, useRef } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
+import { useMascotReaction } from "@/components/exercises/PeekingMascot";
 import { AnswerStatus } from "@/lib/answers";
 
 interface ExerciseFooterProps {
@@ -30,6 +32,17 @@ export function ExerciseFooter({
   correctAnswer,
   almostTitle,
 }: ExerciseFooterProps) {
+  const react = useMascotReaction();
+  const previousStatus = useRef<AnswerStatus | null>(null);
+
+  // Tell the mascot once, when the status changes from null to a result
+  useEffect(() => {
+    if (previousStatus.current === null && status !== null) {
+      react(status === "wrong" ? "sad" : "happy");
+    }
+    previousStatus.current = status;
+  }, [status, react]);
+
   if (status === null) {
     // Exercises without a Check step (matching) show nothing until solved
     if (!onCheck) return null;
