@@ -89,19 +89,18 @@ function getReviewItem(input: TodayPlanInput): PlanItem {
     masteredUnitIds,
     activitiesToday,
   } = input;
-  const did = (mode: string) => activitiesToday.includes(`training:${mode}`);
+  const did = (mode: string) =>
+    activitiesToday.includes(`training:${mode}:${languageCode}`);
   const mistakeCount = countMistakes(languageCode, mistakes);
 
   // A review done today stays in the row with a check mark (the last one wins)
-  const doneMode = [...activitiesToday]
-    .reverse()
-    .find(
-      (id) =>
-        id === "training:mistakes" ||
-        id === "training:mastery" ||
-        id === "training:vocabulary",
-    );
-  if (doneMode === "training:mistakes") {
+  const doneMode = [...activitiesToday].reverse().find(
+    (id) =>
+      id === `training:mistakes:${languageCode}` ||
+      id.startsWith(`training:mastery:${languageCode}-`) ||
+      id === `training:vocabulary:${languageCode}`,
+  );
+  if (doneMode === `training:mistakes:${languageCode}`) {
     return {
       id: "review",
       icon: "bandage",
@@ -116,33 +115,27 @@ function getReviewItem(input: TodayPlanInput): PlanItem {
       href: { pathname: "/training/[mode]", params: { mode: "mistakes" } },
     };
   }
-  if (doneMode === "training:mastery") {
-    // The unit finished first that is not mastered yet, else the last mastered one
-    const units = getUnits(languageCode);
-    const open = units.find(
-      (u) =>
-        !masteredUnitIds.includes(u.id) &&
-        getUnitLessons(u).length > 0 &&
-        getUnitLessons(u).every((l) => completedLessonIds.includes(l.id)),
-    );
-    const lastMasteredId = [...masteredUnitIds]
-      .reverse()
-      .find((id) => units.some((u) => u.id === id));
-    const unit = open ?? units.find((u) => u.id === lastMasteredId);
-    return {
-      id: "review",
-      icon: "trophy",
-      iconBg: "#FEF3C7",
-      iconColor: "#D97706",
-      title: "Master level",
-      subtitle: unit ? unit.title : "Unit mastered 👑",
-      done: true,
-      href: unit
-        ? { pathname: "/training/[mode]", params: { mode: "mastery", unit: unit.id } }
-        : { pathname: "/training/[mode]", params: { mode: "mastery" } },
-    };
+  if (doneMode?.startsWith("training:mastery:")) {
+    // Show exactly the unit that was mastered today
+    const unitId = doneMode.slice("training:mastery:".length);
+    const unit = getUnits(languageCode).find((u) => u.id === unitId);
+    if (unit) {
+      return {
+        id: "review",
+        icon: "trophy",
+        iconBg: "#FEF3C7",
+        iconColor: "#D97706",
+        title: "Master level",
+        subtitle: unit.title,
+        done: true,
+        href: {
+          pathname: "/training/[mode]",
+          params: { mode: "mastery", unit: unit.id },
+        },
+      };
+    }
   }
-  if (doneMode === "training:vocabulary") {
+  if (doneMode === `training:vocabulary:${languageCode}`) {
     return {
       id: "review",
       icon: "albums",
@@ -183,7 +176,7 @@ function getReviewItem(input: TodayPlanInput): PlanItem {
       iconColor: "#D97706",
       title: "Master level",
       subtitle: unit.title,
-      done: did("mastery"),
+      done: false,
       href: {
         pathname: "/training/[mode]",
         params: { mode: "mastery", unit: unit.id },
@@ -224,7 +217,7 @@ function getListenItem(input: TodayPlanInput): PlanItem {
       ...base,
       title: "Listening training",
       subtitle: "Train your ear",
-      done: activitiesToday.includes("training:listening"),
+      done: activitiesToday.includes(`training:listening:${languageCode}`),
       href: { pathname: "/training/[mode]", params: { mode: "listening" } },
     };
   }

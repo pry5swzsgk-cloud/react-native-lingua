@@ -161,7 +161,12 @@ export default function TrainingScreen() {
     if (!info || finishedRef.current) return;
     finishedRef.current = true;
     playSound("complete");
-    recordActivity(`training:${info.mode}`);
+    // Activities carry the language (mastery: the unit, which starts with it)
+    if (info.mode !== "mastery") {
+      recordActivity(`training:${info.mode}:${selectedLanguage}`);
+    } else if (unit) {
+      recordActivity(`training:mastery:${unit}`);
+    }
     if (info.mode === "mastery") {
       // 40 XP the first time, 20 when the unit is already mastered
       const xp =
