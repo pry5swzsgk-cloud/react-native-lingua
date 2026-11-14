@@ -14,6 +14,10 @@ interface ExerciseFooterProps {
   correctAnswer?: string;
   // Replaces the title of the "almost" state
   almostTitle?: string;
+  // Shows an "I don't know" button below "Check" (translation exercises)
+  onDontKnow?: () => void;
+  // Replaces the title of the "wrong" state (e.g. after "I don't know")
+  wrongTitle?: string;
 }
 
 const TITLES: Record<AnswerStatus, string> = {
@@ -31,6 +35,8 @@ export function ExerciseFooter({
   onContinue,
   correctAnswer,
   almostTitle,
+  onDontKnow,
+  wrongTitle,
 }: ExerciseFooterProps) {
   const react = useMascotReaction();
   const previousStatus = useRef<AnswerStatus | null>(null);
@@ -62,6 +68,18 @@ export function ExerciseFooter({
             Check
           </Text>
         </TouchableOpacity>
+        {onDontKnow && (
+          <TouchableOpacity
+            className="items-center py-3 mt-1"
+            activeOpacity={0.7}
+            onPress={onDontKnow}
+            testID="dont-know-button"
+          >
+            <Text className="font-poppins-semibold text-sm text-text-secondary">
+              {"I don't know"}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   }
@@ -76,7 +94,11 @@ export function ExerciseFooter({
       <Text
         className={`font-poppins-bold text-lg ${isWrong ? "text-error" : "text-success"}`}
       >
-        {status === "almost" && almostTitle ? almostTitle : TITLES[status]}
+        {status === "almost" && almostTitle
+          ? almostTitle
+          : status === "wrong" && wrongTitle
+            ? wrongTitle
+            : TITLES[status]}
       </Text>
       {correctAnswer !== undefined && status !== "correct" && (
         <Text className="body-md mt-1">

@@ -25,11 +25,15 @@ export function WordBankExercise({
 }: WordBankExerciseProps) {
   const [picked, setPicked] = useState<number[]>([]); // indexes into tiles
   const [isChecked, setIsChecked] = useState(false);
+  // The learner tapped "I don't know": show the solution, it comes back later
+  const [gaveUp, setGaveUp] = useState(false);
 
   // Japanese words (compose) have no spaces between characters
   const joiner = exercise.kind === "compose" ? "" : " ";
   const given = picked.map((index) => exercise.tiles[index]).join(joiner).toLowerCase();
-  const isCorrect = given === exercise.answer.join(joiner).toLowerCase();
+  const isCorrect = !gaveUp && given === exercise.answer.join(joiner).toLowerCase();
+  // Building a translation (not what you hear) offers "I don't know"
+  const isTranslation = exercise.kind === "word-bank" || exercise.kind === "order";
   // order and tap-heard solutions are in the target language
   const solutionIsSpoken = exercise.kind === "order" || exercise.kind === "tap-heard";
 
@@ -129,6 +133,16 @@ export function WordBankExercise({
           setIsChecked(true);
         }}
         onContinue={() => onDone(isCorrect ? "correct" : "wrong")}
+        onDontKnow={
+          isTranslation
+            ? () => {
+                stopSpeaking();
+                setGaveUp(true);
+                setIsChecked(true);
+              }
+            : undefined
+        }
+        wrongTitle={gaveUp ? "No problem! Here is the solution" : undefined}
       />
     </View>
   );
