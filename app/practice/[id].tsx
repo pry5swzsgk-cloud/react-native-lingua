@@ -39,6 +39,7 @@ export default function PracticeScreen() {
     completedLessonIds,
     completeLesson,
     addXP,
+    recordActivity,
     dailyChests,
     weeklyChests,
     recordMistake,
@@ -115,6 +116,8 @@ export default function PracticeScreen() {
     const xp = isRepeat ? Math.ceil(lesson.xpReward / 2) : lesson.xpReward;
     if (!isRepeat) completeLesson(lesson.id);
     addXP(xp);
+    // Every finished round counts as a level for the daily chest
+    recordActivity(`level:${lesson.id}`);
     setResult({ xp, isRepeat, ...stats });
   }
 

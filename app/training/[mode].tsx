@@ -37,6 +37,7 @@ export default function TrainingScreen() {
     mistakes,
     masteredUnitIds,
     addXP,
+    recordActivity,
     masterUnit,
     recordMistake,
     resolveMistake,
@@ -160,6 +161,7 @@ export default function TrainingScreen() {
     if (!info || finishedRef.current) return;
     finishedRef.current = true;
     playSound("complete");
+    recordActivity(`training:${info.mode}`);
     if (info.mode === "mastery") {
       // 40 XP the first time, 20 when the unit is already mastered
       const xp =
