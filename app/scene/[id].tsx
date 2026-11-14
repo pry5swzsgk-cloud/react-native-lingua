@@ -131,7 +131,8 @@ function LineBubble({
 export default function SceneScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { completedSceneIds, addXP, completeScene } = useLearningStore();
+  const { completedSceneIds, addXP, completeScene, recordActivity } =
+    useLearningStore();
   const hydrated = useLearningHydrated();
   const scene = getScene(id);
 
@@ -321,6 +322,7 @@ export default function SceneScreen() {
       : scene.xpReward;
     addXP(earned);
     completeScene(scene.id);
+    recordActivity(`scene:${scene.id}`);
     setXp(earned);
   }
 

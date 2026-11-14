@@ -4,10 +4,13 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 import { DEFAULT_MASCOT_ID, MascotId, MASCOTS } from "@/data/mascots";
-import { getToday } from "@/lib/dates";
+import { addDays, getToday } from "@/lib/dates";
 import {
+  ActivityByDay,
   buildReward,
   ChestKind,
+  countLevelsOn,
+  DAILY_LEVEL_GOAL,
   getEarnedChests,
   getMascotStatuses,
   Reward,
@@ -20,6 +23,9 @@ interface LearningState {
   // XP earned on each day, by local date: { "2026-11-11": 30 }.
   // Today's XP and the streak are worked out from this.
   xpByDay: XPByDay;
+  // What was done on each day: "level:<lessonId>", "training:<mode>",
+  // "scene:<sceneId>". Only the last 14 days are kept.
+  activityByDay: ActivityByDay;
   totalXP: number;
   longestStreak: number;
   // Reward chests that were earned and wait to be opened (lib/rewards.ts)
@@ -36,6 +42,8 @@ interface LearningState {
   // Story scenes the learner has finished
   completedSceneIds: string[];
   addXP: (amount: number) => void;
+  // Notes something done today; the 3rd level of a day earns the daily chest
+  recordActivity: (id: string) => void;
   completeLesson: (lessonId: string) => void;
   // Opens a waiting chest and returns what was inside (null if none waits)
   openChest: (kind: ChestKind) => Reward | null;
@@ -54,6 +62,7 @@ export const useLearningStore = create<LearningState>()(
       dailyGoal: 20,
       completedLessonIds: [],
       xpByDay: {},
+      activityByDay: {},
       totalXP: 0,
       longestStreak: 0,
       dailyChests: 0,
@@ -70,13 +79,8 @@ export const useLearningStore = create<LearningState>()(
             ...state.xpByDay,
             [today]: (state.xpByDay[today] ?? 0) + amount,
           };
-          // Reaching the daily goal or a full week earns a chest
-          const earned = getEarnedChests(
-            state.xpByDay,
-            xpByDay,
-            today,
-            state.dailyGoal,
-          );
+          // A full week of learning earns a chest
+          const earned = getEarnedChests(state.xpByDay, xpByDay, today);
           return {
             xpByDay,
             totalXP: state.totalXP + amount,
@@ -84,8 +88,27 @@ export const useLearningStore = create<LearningState>()(
               state.longestStreak,
               getStreak(xpByDay, today),
             ),
-            dailyChests: state.dailyChests + (earned.daily ? 1 : 0),
             weeklyChests: state.weeklyChests + (earned.weekly ? 1 : 0),
+          };
+        }),
+      recordActivity: (id) =>
+        set((state) => {
+          const today = getToday();
+          const oldest = addDays(today, -13);
+          // Keep today and the 13 days before it
+          const activityByDay: ActivityByDay = {};
+          for (const [day, ids] of Object.entries(state.activityByDay)) {
+            if (day >= oldest) activityByDay[day] = ids;
+          }
+          activityByDay[today] = [...(activityByDay[today] ?? []), id];
+
+          // The 3rd level of the day earns the daily chest (only once)
+          const reachedGoal =
+            id.startsWith("level:") &&
+            countLevelsOn(state.activityByDay, today) === DAILY_LEVEL_GOAL - 1;
+          return {
+            activityByDay,
+            dailyChests: state.dailyChests + (reachedGoal ? 1 : 0),
           };
         }),
       completeLesson: (lessonId) =>

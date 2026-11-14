@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
 import { ExerciseFooter } from "@/components/exercises/ExerciseFooter";
+import { useMascotReaction } from "@/components/exercises/PeekingMascot";
 import { PronunciationFeedback } from "@/components/PronunciationFeedback";
 import { SpeakButton } from "@/components/SpeakButton";
 import { colors } from "@/constants/theme";
@@ -36,9 +37,18 @@ export function SpeakExercise({
   const [liveText, setLiveText] = useState("");
   const [error, setError] = useState("");
   const stopRef = useRef<(() => void) | null>(null);
+  const reactMascot = useMascotReaction();
 
   // Stop the microphone when the exercise leaves the screen
-  useEffect(() => () => stopRef.current?.(), []);
+  // Results that arrive after leaving the exercise are ignored
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      stopRef.current?.();
+    };
+  }, []);
 
   const hasPassed = result?.passed === true;
   // With hideText the sentence stays hidden until the first attempt
@@ -70,17 +80,26 @@ export function SpeakExercise({
     setError("");
     setLiveText("");
     stopRef.current = listenOnce(locale, {
-      onPartial: setLiveText,
+      onPartial: (text) => {
+        if (isMountedRef.current) setLiveText(text);
+      },
       onResult: (transcript) => {
+        if (!isMountedRef.current) return;
         const comparison = question
           ? answerResult(transcript)
           : comparePronunciation(exercise.text, transcript);
         playSound(comparison.passed ? "correct" : "wrong");
+        // A passed attempt is announced by the footer
+        if (!comparison.passed) reactMascot("sad");
         setHeard(transcript);
         setResult(comparison);
       },
-      onError: setError,
-      onEnd: () => setIsListening(false),
+      onError: (message) => {
+        if (isMountedRef.current) setError(message);
+      },
+      onEnd: () => {
+        if (isMountedRef.current) setIsListening(false);
+      },
     }).stop;
   }
 

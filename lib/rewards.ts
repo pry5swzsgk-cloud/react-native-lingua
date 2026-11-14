@@ -2,7 +2,7 @@ import { Mascot } from "@/data/mascots";
 import { getStreak, XPByDay } from "@/lib/streak";
 
 // Rewards for learning regularly:
-//   - Daily chest: earned when today's XP reach the daily goal.
+//   - Daily chest: earned when the 3rd level of the day is finished.
 //     It holds one mascot piece.
 //   - Weekly chest: earned for every 7 days learned in a row.
 //     It holds three mascot pieces.
@@ -20,30 +20,38 @@ export const WEEK_LENGTH = 7; // days in a row for one weekly chest
 export const DAILY_BONUS_XP = 10;
 export const WEEKLY_BONUS_XP = 30;
 
+// Levels (lessons or bosses) to finish in one day for the daily chest
+export const DAILY_LEVEL_GOAL = 3;
+
 export type ChestKind = "daily" | "weekly";
+
+// What was done on each day, by local date: { "2026-11-11": ["level:abc"] }.
+// Level entries start with "level:".
+export type ActivityByDay = Record<string, string[]>;
+
+// How many levels were finished on the given day
+export function countLevelsOn(activityByDay: ActivityByDay, day: string): number {
+  return (activityByDay[day] ?? []).filter((id) => id.startsWith("level:"))
+    .length;
+}
 
 // ── Earning chests ──
 
-// Which chests the learner earned with XP that was just added.
+// Whether the XP that was just added earned the weekly chest.
 // `xpBefore` is the XP per day before, `xpAfter` with the new XP.
+// (The daily chest is earned by finishing levels, see the store.)
 export function getEarnedChests(
   xpBefore: XPByDay,
   xpAfter: XPByDay,
   today: string,
-  dailyGoal: number,
-): { daily: boolean; weekly: boolean } {
-  // Daily: today's XP just crossed the goal (only once a day)
-  const before = xpBefore[today] ?? 0;
-  const after = xpAfter[today] ?? 0;
-  const daily = before < dailyGoal && after >= dailyGoal;
-
+): { weekly: boolean } {
   // Weekly: the streak just grew to 7, 14, 21 … days.
   // It only grows with the first XP of a day, so this is once a day too.
   const streakBefore = getStreak(xpBefore, today);
   const streakAfter = getStreak(xpAfter, today);
   const weekly = streakAfter > streakBefore && streakAfter % WEEK_LENGTH === 0;
 
-  return { daily, weekly };
+  return { weekly };
 }
 
 // ── Showing chests ──
@@ -54,13 +62,12 @@ export function getEarnedChests(
 export type ChestState = "locked" | "ready" | "opened";
 
 export function getDailyChestState(
-  xpToday: number,
-  dailyGoal: number,
+  levelsToday: number,
   waitingDailyChests: number,
 ): ChestState {
   if (waitingDailyChests > 0) return "ready";
   // Goal reached and nothing waits: today's chest was opened already
-  return xpToday >= dailyGoal ? "opened" : "locked";
+  return levelsToday >= DAILY_LEVEL_GOAL ? "opened" : "locked";
 }
 
 export function getWeeklyChestState(
