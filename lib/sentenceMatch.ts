@@ -133,10 +133,55 @@ function getAlternatives(expected: string): string[] {
   return alternatives.map((text) => text.replace(/\s*\([^)]*\)/g, ""));
 }
 
+// Words that make a sentence negative (apostrophes are already removed).
+const NEGATION_WORDS = new Set([
+  "not",
+  "no",
+  "never",
+  "cannot",
+  "nobody",
+  "nothing",
+  "nowhere",
+  "dont",
+  "doesnt",
+  "didnt",
+  "isnt",
+  "arent",
+  "wasnt",
+  "werent",
+  "cant",
+  "couldnt",
+  "wont",
+  "wouldnt",
+  "shouldnt",
+  "hasnt",
+  "havent",
+  "hadnt",
+  "mustnt",
+]);
+
+// Counts the negations in a text. "can't" and "cant" both count as one.
+// Example: "I can't go" -> 1, "I can go" -> 0.
+export function countNegations(text: string): number {
+  return text
+    .toLowerCase()
+    .replace(/['’]/g, "")
+    .split(/[^a-z0-9]+/)
+    .filter((word) => NEGATION_WORDS.has(word)).length;
+}
+
 export function checkTranslatedSentence(
   expected: string,
   typed: string,
 ): { status: AnswerStatus; exact: boolean } {
+  if (typed.trim().length === 0) return { status: "wrong", exact: false };
+
+  // A different number of negations is always wrong, even with a lost apostrophe.
+  // Example: "I can go." vs "I cant go" must not count as "almost".
+  if (countNegations(expected) !== countNegations(typed)) {
+    return { status: "wrong", exact: false };
+  }
+
   // Step 1: the normal check first. Example: "I like it." vs "i like it".
   const direct = checkTypedAnswer(expected, typed, true);
   if (direct === "correct") return { status: "correct", exact: true };
