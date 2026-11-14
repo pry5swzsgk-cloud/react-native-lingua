@@ -21,6 +21,7 @@ import { getNextLesson, getUnitOfLesson, getUnits } from "@/lib/progress";
 import {
   ChestKind,
   countLevelsOn,
+  DAILY_LEVEL_GOAL,
   getDailyChestState,
   getDaysToWeeklyChest,
   getWeeklyChestState,
@@ -85,7 +86,6 @@ const PLAN_ITEMS = [
 export default function HomeScreen() {
   const { selectedLanguage } = useLanguageStore();
   const {
-    dailyGoal,
     completedLessonIds,
     activityByDay,
     dailyChests,
@@ -108,14 +108,12 @@ export default function HomeScreen() {
   const unit =
     (nextLesson && getUnitOfLesson(nextLesson)) ?? getUnits(selectedLanguage)[0];
   const greeting = getGreeting(selectedLanguage);
-  const xpProgress =
-    dailyGoal > 0 ? Math.min((xpToday / dailyGoal) * 100, 100) : 0;
 
   // ── Reward chests (rules in lib/rewards.ts) ──
-  const dailyState = getDailyChestState(
-    countLevelsOn(activityByDay, getToday()),
-    dailyChests,
-  );
+  const levelsToday = countLevelsOn(activityByDay, getToday());
+  const levelsProgress = Math.min(levelsToday / DAILY_LEVEL_GOAL, 1) * 100;
+  const levelsToGo = Math.max(DAILY_LEVEL_GOAL - levelsToday, 0);
+  const dailyState = getDailyChestState(levelsToday, dailyChests);
   const dailyStatus =
     dailyState === "ready"
       ? dailyChests > 1
@@ -123,7 +121,9 @@ export default function HomeScreen() {
         : "Your chest is ready. Tap to open!"
       : dailyState === "opened"
         ? "Chest opened. Come back tomorrow!"
-        : `${dailyGoal - xpToday} XP to go for today's chest`;
+        : levelsToGo === 1
+          ? "1 more level for today's chest"
+          : `Finish ${levelsToGo} more levels for today's chest`;
 
   const weeklyState = getWeeklyChestState(streak, weeklyChests);
   const weekProgress = getWeekProgress(streak, weeklyChests);
@@ -210,22 +210,26 @@ export default function HomeScreen() {
             <Text>
               <Text
                 className="font-poppins-bold text-[28px] text-text-primary leading-[34px]"
-                testID="home-xp-today"
+                testID="home-levels-today"
               >
-                {xpToday}
+                {levelsToday}
               </Text>
               <Text className="font-poppins text-sm text-text-secondary leading-[34px]">
-                {` / ${dailyGoal} XP`}
+                {` / ${DAILY_LEVEL_GOAL} levels`}
               </Text>
             </Text>
             <View className="h-2 bg-border rounded mt-[10px] overflow-hidden">
               <View
                 className="h-2 bg-streak rounded"
-                style={{ width: `${Math.round(xpProgress)}%` as `${number}%` }}
+                style={{ width: `${Math.round(levelsProgress)}%` as `${number}%` }}
               />
             </View>
+            <Text className="font-poppins text-xs text-text-secondary mt-2">
+              <Text testID="home-xp-today">{xpToday}</Text>
+              {" XP today"}
+            </Text>
             <Text
-              className="font-poppins text-xs text-text-secondary mt-2"
+              className="font-poppins text-xs text-text-secondary mt-1"
               testID="daily-chest-status"
             >
               {dailyStatus}
