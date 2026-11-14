@@ -90,8 +90,71 @@ function getReviewItem(input: TodayPlanInput): PlanItem {
     activitiesToday,
   } = input;
   const did = (mode: string) => activitiesToday.includes(`training:${mode}`);
-
   const mistakeCount = countMistakes(languageCode, mistakes);
+
+  // A review done today stays in the row with a check mark (the last one wins)
+  const doneMode = [...activitiesToday]
+    .reverse()
+    .find(
+      (id) =>
+        id === "training:mistakes" ||
+        id === "training:mastery" ||
+        id === "training:vocabulary",
+    );
+  if (doneMode === "training:mistakes") {
+    return {
+      id: "review",
+      icon: "bandage",
+      iconBg: "#FEE2E2",
+      iconColor: "#EF4444",
+      title: "Fix your mistakes",
+      subtitle:
+        mistakeCount > 0
+          ? `${mistakeCount} saved ${mistakeCount === 1 ? "mistake" : "mistakes"}`
+          : "All mistakes fixed 🎉",
+      done: true,
+      href: { pathname: "/training/[mode]", params: { mode: "mistakes" } },
+    };
+  }
+  if (doneMode === "training:mastery") {
+    // The unit finished first that is not mastered yet, else the last mastered one
+    const units = getUnits(languageCode);
+    const open = units.find(
+      (u) =>
+        !masteredUnitIds.includes(u.id) &&
+        getUnitLessons(u).length > 0 &&
+        getUnitLessons(u).every((l) => completedLessonIds.includes(l.id)),
+    );
+    const lastMasteredId = [...masteredUnitIds]
+      .reverse()
+      .find((id) => units.some((u) => u.id === id));
+    const unit = open ?? units.find((u) => u.id === lastMasteredId);
+    return {
+      id: "review",
+      icon: "trophy",
+      iconBg: "#FEF3C7",
+      iconColor: "#D97706",
+      title: "Master level",
+      subtitle: unit ? unit.title : "Unit mastered 👑",
+      done: true,
+      href: unit
+        ? { pathname: "/training/[mode]", params: { mode: "mastery", unit: unit.id } }
+        : { pathname: "/training/[mode]", params: { mode: "mastery" } },
+    };
+  }
+  if (doneMode === "training:vocabulary") {
+    return {
+      id: "review",
+      icon: "albums",
+      iconBg: "#E0F2FE",
+      iconColor: "#0284C7",
+      title: "Vocabulary training",
+      subtitle: "Review words you learned",
+      done: true,
+      href: { pathname: "/training/[mode]", params: { mode: "vocabulary" } },
+    };
+  }
+
   if (mistakeCount > 0) {
     return {
       id: "review",
