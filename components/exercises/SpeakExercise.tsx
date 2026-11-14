@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
 import { ExerciseFooter } from "@/components/exercises/ExerciseFooter";
+import { useMascotReaction } from "@/components/exercises/PeekingMascot";
 import { PronunciationFeedback } from "@/components/PronunciationFeedback";
 import { SpeakButton } from "@/components/SpeakButton";
 import { colors } from "@/constants/theme";
@@ -36,6 +37,7 @@ export function SpeakExercise({
   const [liveText, setLiveText] = useState("");
   const [error, setError] = useState("");
   const stopRef = useRef<(() => void) | null>(null);
+  const reactMascot = useMascotReaction();
 
   // Stop the microphone when the exercise leaves the screen
   useEffect(() => () => stopRef.current?.(), []);
@@ -76,6 +78,8 @@ export function SpeakExercise({
           ? answerResult(transcript)
           : comparePronunciation(exercise.text, transcript);
         playSound(comparison.passed ? "correct" : "wrong");
+        // A passed attempt is announced by the footer
+        if (!comparison.passed) reactMascot("sad");
         setHeard(transcript);
         setResult(comparison);
       },

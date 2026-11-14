@@ -116,133 +116,133 @@ export function ExerciseSession({
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <MascotReactionProvider>
-        {/* Header: close button and progress */}
-        {/* (hidden when empty: the hint below has its own close button) */}
-        <View className={`flex-row items-center gap-3 px-5 pt-2 pb-5 ${total === 0 ? "hidden" : ""}`}>
-          <TouchableOpacity
-            onPress={onClose}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel="Close exercises"
-            testID={total === 0 ? undefined : "practice-close-button"}
-          >
-            <Ionicons
-              name="close"
-              size={26}
-              color={colors.neutral.textSecondary}
-            />
-          </TouchableOpacity>
-          {boss ? (
-            <View className="flex-1 flex-row items-center gap-2">
-              <Animated.Text style={[{ fontSize: 28 }, bossStyle]}>
-                {boss.emoji}
-              </Animated.Text>
-              <View className="flex-1 gap-1">
-                <Text className="font-poppins-semibold text-xs text-text-primary" numberOfLines={1}>
-                  {boss.name}
-                </Text>
-                <View
-                  className="h-3 bg-border rounded-full overflow-hidden"
-                  accessibilityLabel={`Boss health ${health}%`}
-                  testID="boss-health"
-                >
-                  <View
-                    className="h-3 bg-error rounded-full"
-                    style={{ width: `${health}%` }}
-                  />
-                </View>
-              </View>
-            </View>
-          ) : (
-            <View className="flex-1 h-3 bg-border rounded-full overflow-hidden">
-              <View
-                className="h-3 bg-success rounded-full"
-                style={{ width: `${progress}%` }}
-              />
-            </View>
-          )}
-          <Text className="caption" testID="practice-progress">
-            {solved}/{total}
-          </Text>
-        </View>
-
-        {/* Strip where the mascot peeks over the exercise */}
-        {total > 0 && (
-          <View className="h-14 items-end px-5">
-            <PeekingMascot />
-          </View>
-        )}
-
-        {total === 0 ? (
-          <View className="flex-1 items-center justify-center px-8 gap-6" testID="session-empty">
-            <Text className="h3 text-center">Nothing to practise here yet</Text>
-            <Text className="body-md text-center">
-              There is no content for this practice yet. Try another one.
-            </Text>
+          {/* Header: close button and progress */}
+          {/* (hidden when empty: the hint below has its own close button) */}
+          <View className={`flex-row items-center gap-3 px-5 pt-2 pb-5 ${total === 0 ? "hidden" : ""}`}>
             <TouchableOpacity
               onPress={onClose}
-              className="rounded-2xl items-center py-4 px-10 bg-lingua-purple"
-              accessibilityLabel="Close"
-              testID="practice-close-button"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityLabel="Close exercises"
+              testID={total === 0 ? undefined : "practice-close-button"}
             >
-              <Text className="font-poppins-semibold text-base text-white">Close</Text>
+              <Ionicons
+                name="close"
+                size={26}
+                color={colors.neutral.textSecondary}
+              />
             </TouchableOpacity>
+            {boss ? (
+              <View className="flex-1 flex-row items-center gap-2">
+                <Animated.Text style={[{ fontSize: 28 }, bossStyle]}>
+                  {boss.emoji}
+                </Animated.Text>
+                <View className="flex-1 gap-1">
+                  <Text className="font-poppins-semibold text-xs text-text-primary" numberOfLines={1}>
+                    {boss.name}
+                  </Text>
+                  <View
+                    className="h-3 bg-border rounded-full overflow-hidden"
+                    accessibilityLabel={`Boss health ${health}%`}
+                    testID="boss-health"
+                  >
+                    <View
+                      className="h-3 bg-error rounded-full"
+                      style={{ width: `${health}%` }}
+                    />
+                  </View>
+                </View>
+              </View>
+            ) : (
+              <View className="flex-1 h-3 bg-border rounded-full overflow-hidden">
+                <View
+                  className="h-3 bg-success rounded-full"
+                  style={{ width: `${progress}%` }}
+                />
+              </View>
+            )}
+            <Text className="caption" testID="practice-progress">
+              {solved}/{total}
+            </Text>
           </View>
-        ) : !exercise ? (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color={colors.primary.purple} />
-          </View>
-        ) : exercise.type === "match" ? (
-          <MatchExercise key={position} exercise={exercise} onDone={handleDone} />
-        ) : exercise.type === "listen" ? (
-          <ListenExercise
-            key={position}
-            exercise={exercise}
-            languageCode={languageCode}
-            onDone={handleDone}
-          />
-        ) : exercise.type === "choice" ? (
-          <ChoiceExercise
-            key={position}
-            exercise={exercise}
-            languageCode={languageCode}
-            onDone={handleDone}
-          />
-        ) : exercise.type === "wordbank" ? (
-          <WordBankExercise
-            key={position}
-            exercise={exercise}
-            languageCode={languageCode}
-            onDone={handleDone}
-          />
-        ) : exercise.type === "gap" ? (
-          <GapExercise
-            key={position}
-            exercise={exercise}
-            languageCode={languageCode}
-            onDone={handleDone}
-          />
-        ) : exercise.type === "freetext" ? (
-          <FreeTextExercise
-            key={position}
-            exercise={exercise}
-            languageCode={languageCode}
-            onDone={handleDone}
-          />
-        ) : exercise.type === "speak" ? (
-          <SpeakExercise
-            key={position}
-            exercise={exercise}
-            languageCode={languageCode}
-            onDone={handleDone}
-          />
-        ) : exercise.type === "write" || exercise.type === "dictation" ? (
-          <TypeExercise
-            key={position}
-            exercise={exercise}
-            languageCode={languageCode}
-            onDone={handleDone}
-          />
-        ) : null}
+
+          {/* Strip where the mascot peeks over the exercise */}
+          {total > 0 && (
+            <View className="h-14 items-end px-5">
+              <PeekingMascot />
+            </View>
+          )}
+
+          {total === 0 ? (
+            <View className="flex-1 items-center justify-center px-8 gap-6" testID="session-empty">
+              <Text className="h3 text-center">Nothing to practise here yet</Text>
+              <Text className="body-md text-center">
+                There is no content for this practice yet. Try another one.
+              </Text>
+              <TouchableOpacity
+                onPress={onClose}
+                className="rounded-2xl items-center py-4 px-10 bg-lingua-purple"
+                accessibilityLabel="Close"
+                testID="practice-close-button"
+              >
+                <Text className="font-poppins-semibold text-base text-white">Close</Text>
+              </TouchableOpacity>
+            </View>
+          ) : !exercise ? (
+            <View className="flex-1 items-center justify-center">
+              <ActivityIndicator size="large" color={colors.primary.purple} />
+            </View>
+          ) : exercise.type === "match" ? (
+            <MatchExercise key={position} exercise={exercise} onDone={handleDone} />
+          ) : exercise.type === "listen" ? (
+            <ListenExercise
+              key={position}
+              exercise={exercise}
+              languageCode={languageCode}
+              onDone={handleDone}
+            />
+          ) : exercise.type === "choice" ? (
+            <ChoiceExercise
+              key={position}
+              exercise={exercise}
+              languageCode={languageCode}
+              onDone={handleDone}
+            />
+          ) : exercise.type === "wordbank" ? (
+            <WordBankExercise
+              key={position}
+              exercise={exercise}
+              languageCode={languageCode}
+              onDone={handleDone}
+            />
+          ) : exercise.type === "gap" ? (
+            <GapExercise
+              key={position}
+              exercise={exercise}
+              languageCode={languageCode}
+              onDone={handleDone}
+            />
+          ) : exercise.type === "freetext" ? (
+            <FreeTextExercise
+              key={position}
+              exercise={exercise}
+              languageCode={languageCode}
+              onDone={handleDone}
+            />
+          ) : exercise.type === "speak" ? (
+            <SpeakExercise
+              key={position}
+              exercise={exercise}
+              languageCode={languageCode}
+              onDone={handleDone}
+            />
+          ) : exercise.type === "write" || exercise.type === "dictation" ? (
+            <TypeExercise
+              key={position}
+              exercise={exercise}
+              languageCode={languageCode}
+              onDone={handleDone}
+            />
+          ) : null}
         </MascotReactionProvider>
       </KeyboardAvoidingView>
     </SafeAreaView>

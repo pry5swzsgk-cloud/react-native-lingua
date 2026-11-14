@@ -153,9 +153,10 @@ export function PeekingMascot() {
 
   return (
     <View
-      className="flex-row items-end justify-end px-5"
+      className="flex-row items-end justify-end"
       nativeID={`mascot-${state}`}
       testID="peeking-mascot"
+      aria-hidden={true}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
@@ -169,7 +170,7 @@ export function PeekingMascot() {
           </Text>
         </View>
       ) : null}
-      <View style={styles.frame}>
+      <View className="h-14 w-14 overflow-hidden">
         <Animated.Image
           source={mascotImages[mascotId]}
           style={[styles.image, imageStyle]}
@@ -180,6 +181,5 @@ export function PeekingMascot() {
 }
 
 const styles = StyleSheet.create({
-  frame: { width: SIZE, height: SIZE, overflow: "hidden" },
   image: { width: SIZE, height: SIZE },
 });
