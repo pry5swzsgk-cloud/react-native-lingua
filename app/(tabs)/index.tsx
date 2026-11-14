@@ -30,6 +30,7 @@ import {
   WEEK_LENGTH,
 } from "@/lib/rewards";
 import { playSound } from "@/lib/sounds";
+import { getTodayPlan } from "@/lib/todayPlan";
 import { useLanguageStore, useStartUnitOrder } from "@/store/languageStore";
 import {
   useLearningStore,
@@ -53,41 +54,14 @@ function getGreeting(langCode: LanguageCode | null): string {
   }
 }
 
-const PLAN_ITEMS = [
-  {
-    id: "lesson",
-    icon: "book" as const,
-    iconBg: "#EDE9FE",
-    iconColor: colors.primary.purple,
-    title: "Lesson",
-    subtitle: "At the café",
-    completed: false,
-  },
-  {
-    id: "ai-conversation",
-    icon: "headset" as const,
-    iconBg: "#EDE9FE",
-    iconColor: colors.primary.purple,
-    title: "AI Conversation",
-    subtitle: "Talk about your day",
-    completed: false,
-  },
-  {
-    id: "new-words",
-    icon: "chatbubble-ellipses" as const,
-    iconBg: "#FEE2E2",
-    iconColor: "#EF4444",
-    title: "New words",
-    subtitle: "10 words",
-    completed: false,
-  },
-];
-
 export default function HomeScreen() {
   const { selectedLanguage } = useLanguageStore();
   const {
     completedLessonIds,
     activityByDay,
+    mistakes,
+    masteredUnitIds,
+    completedSceneIds,
     dailyChests,
     weeklyChests,
     openChest,
@@ -108,6 +82,15 @@ export default function HomeScreen() {
   const unit =
     (nextLesson && getUnitOfLesson(nextLesson)) ?? getUnits(selectedLanguage)[0];
   const greeting = getGreeting(selectedLanguage);
+  const planItems = getTodayPlan({
+    languageCode: selectedLanguage,
+    completedLessonIds,
+    startUnitOrder,
+    mistakes,
+    masteredUnitIds,
+    completedSceneIds,
+    activitiesToday: activityByDay[getToday()] ?? [],
+  });
 
   // ── Reward chests (rules in lib/rewards.ts) ──
   const levelsToday = countLevelsOn(activityByDay, getToday());
@@ -321,52 +304,74 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* ── Today's Plan Header ── */}
-        <View className="flex-row items-center justify-between mb-3">
-          <Text className="font-poppins-semibold text-[17px] text-text-primary">
-            {"Today's plan"}
-          </Text>
-          <TouchableOpacity activeOpacity={0.7}>
-            <Text className="font-poppins-medium text-[13px] text-lingua-blue">
-              View all
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* ── Today's Plan Card ── */}
-        <View
-          className="bg-white rounded-[20px] border border-border mb-4 overflow-hidden"
-          style={styles.planCardShadow}
-        >
-          {PLAN_ITEMS.map((item, index) => (
-            <View key={item.id}>
-              {index > 0 && <View className="h-px bg-border mx-4" />}
-              <View className="flex-row items-center px-4 py-[14px]">
-                <View
-                  className="w-11 h-11 rounded-xl items-center justify-center"
-                  style={{ backgroundColor: item.iconBg }}
-                >
-                  <Ionicons name={item.icon} size={20} color={item.iconColor} />
-                </View>
-                <View className="flex-1 ml-3">
-                  <Text className="font-poppins-semibold text-sm text-text-primary mb-0.5">
-                    {item.title}
-                  </Text>
-                  <Text className="font-poppins text-xs text-text-secondary">
-                    {item.subtitle}
-                  </Text>
-                </View>
-                {item.completed ? (
-                  <View className="w-[26px] h-[26px] rounded-full bg-lingua-blue items-center justify-center">
-                    <Ionicons name="checkmark" size={14} color="#fff" />
-                  </View>
-                ) : (
-                  <View className="w-[26px] h-[26px] rounded-full border-2 border-border" />
-                )}
-              </View>
+        {planItems.length > 0 && (
+          <>
+            {/* ── Today's Plan Header ── */}
+            <View className="flex-row items-center justify-between mb-3">
+              <Text className="font-poppins-semibold text-[17px] text-text-primary">
+                {"Today's plan"}
+              </Text>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => router.navigate("/chat")}
+                testID="plan-view-all"
+              >
+                <Text className="font-poppins-medium text-[13px] text-lingua-blue">
+                  View all
+                </Text>
+              </TouchableOpacity>
             </View>
-          ))}
-        </View>
+
+            {/* ── Today's Plan Card ── */}
+            <View
+              className="bg-white rounded-[20px] border border-border mb-4 overflow-hidden"
+              style={styles.planCardShadow}
+            >
+              {planItems.map((item, index) => (
+                <View key={item.id}>
+                  {index > 0 && <View className="h-px bg-border mx-4" />}
+                  <TouchableOpacity
+                    className="flex-row items-center px-4 py-[14px]"
+                    activeOpacity={0.7}
+                    onPress={() => router.push(item.href)}
+                    testID={`plan-item-${item.id}`}
+                  >
+                    <View
+                      className="w-11 h-11 rounded-xl items-center justify-center"
+                      style={{ backgroundColor: item.iconBg }}
+                    >
+                      <Ionicons
+                        name={item.icon}
+                        size={20}
+                        color={item.iconColor}
+                      />
+                    </View>
+                    <View className="flex-1 ml-3">
+                      <Text className="font-poppins-semibold text-sm text-text-primary mb-0.5">
+                        {item.title}
+                      </Text>
+                      <Text className="font-poppins text-xs text-text-secondary">
+                        {item.subtitle}
+                      </Text>
+                    </View>
+                    {item.progress && (
+                      <Text className="font-poppins-medium text-xs text-text-secondary mr-2">
+                        {item.progress}
+                      </Text>
+                    )}
+                    {item.done ? (
+                      <View className="w-[26px] h-[26px] rounded-full bg-lingua-blue items-center justify-center">
+                        <Ionicons name="checkmark" size={14} color="#fff" />
+                      </View>
+                    ) : (
+                      <View className="w-[26px] h-[26px] rounded-full border-2 border-border" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
       </ScrollView>
 
       <RewardDialog
