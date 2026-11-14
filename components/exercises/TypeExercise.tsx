@@ -30,10 +30,14 @@ export function TypeExercise({ exercise, languageCode, onDone }: TypeExercisePro
   const [status, setStatus] = useState<AnswerStatus | null>(null);
   // false when a sentence was right but worded differently from the model answer
   const [exact, setExact] = useState(true);
+  // The learner tapped "I don't know": show the answer, the exercise comes back later
+  const [gaveUp, setGaveUp] = useState(false);
 
   const languageName =
     LANGUAGES.find((l) => l.code === languageCode)?.name ?? "the language";
   const answerLanguage = exercise.answerInEnglish ? "English" : languageName;
+  // Translating (not writing down what you hear) offers "I don't know"
+  const isTranslation = exercise.type === "write" || exercise.answerInEnglish;
 
   function handleCheck() {
     if (!typed.trim() || status !== null) return;
@@ -53,6 +57,15 @@ export function TypeExercise({ exercise, languageCode, onDone }: TypeExercisePro
     // "almost" (accent or typo) still counts, so it gets the happy sound
     playSound(result === "wrong" ? "wrong" : "correct");
     setStatus(result);
+  }
+
+  // Counts like a wrong answer, so the exercise comes back at the end,
+  // but without the "wrong" sound: not knowing something is fine.
+  function handleDontKnow() {
+    if (status !== null) return;
+    stopSpeaking();
+    setGaveUp(true);
+    setStatus("wrong");
   }
 
   return (
@@ -139,6 +152,8 @@ export function TypeExercise({ exercise, languageCode, onDone }: TypeExercisePro
         onCheck={handleCheck}
         onContinue={() => onDone(status === "wrong" ? "wrong" : "correct")}
         correctAnswer={exercise.answer}
+        onDontKnow={isTranslation ? handleDontKnow : undefined}
+        wrongTitle={gaveUp ? "No problem! Here is the answer" : undefined}
       />
     </View>
   );
