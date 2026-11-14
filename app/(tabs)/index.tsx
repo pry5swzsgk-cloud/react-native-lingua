@@ -16,9 +16,11 @@ import { RewardDialog } from "@/components/rewards/RewardDialog";
 import { images } from "@/constants/images";
 import { colors } from "@/constants/theme";
 import { LANGUAGES } from "@/data/languages";
+import { getToday } from "@/lib/dates";
 import { getNextLesson, getUnitOfLesson, getUnits } from "@/lib/progress";
 import {
   ChestKind,
+  countLevelsOn,
   getDailyChestState,
   getDaysToWeeklyChest,
   getWeeklyChestState,
@@ -82,8 +84,14 @@ const PLAN_ITEMS = [
 
 export default function HomeScreen() {
   const { selectedLanguage } = useLanguageStore();
-  const { dailyGoal, completedLessonIds, dailyChests, weeklyChests, openChest } =
-    useLearningStore();
+  const {
+    dailyGoal,
+    completedLessonIds,
+    activityByDay,
+    dailyChests,
+    weeklyChests,
+    openChest,
+  } = useLearningStore();
   const xpToday = useTodayXP();
   const streak = useStreak();
   // What was in the chest that was just opened (shown in a dialog)
@@ -104,7 +112,10 @@ export default function HomeScreen() {
     dailyGoal > 0 ? Math.min((xpToday / dailyGoal) * 100, 100) : 0;
 
   // ── Reward chests (rules in lib/rewards.ts) ──
-  const dailyState = getDailyChestState(xpToday, dailyGoal, dailyChests);
+  const dailyState = getDailyChestState(
+    countLevelsOn(activityByDay, getToday()),
+    dailyChests,
+  );
   const dailyStatus =
     dailyState === "ready"
       ? dailyChests > 1
